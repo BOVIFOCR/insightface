@@ -997,7 +997,7 @@ if __name__ == '__main__':
     # general
     # parser.add_argument('--data-dir', default='', help='')                                                                                   # original
     # parser.add_argument('--data-dir', default='/datasets1/bjgbiesseck/MS-Celeb-1M/faces_emore', help='')                                     # Bernardo
-    parser.add_argument('--data-dir', default='/datasets2/frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_112x112', help='')   # Bernardo
+    parser.add_argument('--data-dir', default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112', help='')   # Bernardo
 
     parser.add_argument('--network', default='r100', type=str, help='')
     parser.add_argument('--model',
@@ -1010,7 +1010,7 @@ if __name__ == '__main__':
                         # default='lfw',                                 # Bernardo
                         default='bupt',                                  # Bernardo
                         help='test targets.')
-    parser.add_argument('--protocol', default='/datasets2/frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt', type=str, help='')
+    parser.add_argument('--protocol', default='/datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt', type=str, help='')
     parser.add_argument('--gpu', default=0, type=int, help='gpu id')
     parser.add_argument('--batch-size', default=32, type=int, help='')
     parser.add_argument('--max', default='', type=str, help='')
