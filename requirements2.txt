@@ -68,14 +68,16 @@ Pillow>=10.3.0
 platformdirs==3.2.0
 pooch==1.7.0
 prettytable==3.7.0
-protobuf==3.19.4
+# protobuf==3.19.4
+protobuf>=3.19.5
 psutil==5.9.5
 py-cpuinfo==9.0.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pydantic==1.10.7
 Pygments==2.15.1
-pymdown-extensions==9.11
+# pymdown-extensions==9.11
+pymdown-extensions>=10.0
 pyparsing==3.0.9
 PySocks==1.7.1
 python-dateutil==2.8.2
