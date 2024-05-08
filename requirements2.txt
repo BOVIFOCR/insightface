@@ -112,6 +112,7 @@ wandb==0.14.2
 watchdog==3.0.0
 wcmatch==8.4.1
 wcwidth==0.2.6
-Werkzeug==2.2.3
+# Werkzeug==2.2.3
+Werkzeug>=3.0.3
 xgboost==1.6.2
 zipp
