@@ -108,7 +108,7 @@ tqdm==4.62.3
 typing_extensions==4.5.0
 urllib3==1.26.12
 vtk==9.2.6
-wandb==0.14.2
+wandb==0.14.2   # to be updated when wandb > 0.17.0 is released
 watchdog==3.0.0
 wcmatch==8.4.1
 wcwidth==0.2.6
