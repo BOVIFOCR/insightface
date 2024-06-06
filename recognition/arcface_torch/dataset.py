@@ -18,6 +18,7 @@ from utils.utils_distributed_sampler import get_dist_info, worker_init_fn
 from dataloaders.casiawebface_loader import CASIAWebFace_loader
 from dataloaders.gandiffface_loader import GANDiffFace_loader
 from dataloaders.dcface_loader import DCFace_loader
+from dataloaders.dcface_localtrained_loader import DCFaceLocalTrained_loader
 
 
 def get_dataloader(
@@ -27,6 +28,7 @@ def get_dataloader(
     dali = False,
     seed = 2048,
     num_workers = 2,
+    cfg = None
     ) -> Iterable:
 
     transform = transforms.Compose([
@@ -75,6 +77,10 @@ def get_dataloader(
             elif 'GANDiffFace'.lower() in root_dir.lower():
                 print(f'Loading train dataset \'{root_dir}\' ...')
                 train_set = GANDiffFace_loader(root_dir, transform)
+
+            elif 'DCFace'.lower() in root_dir.lower() and ':' in root_dir.lower():
+                print(f'Loading train dataset \'{root_dir}\' ...')
+                train_set = DCFaceLocalTrained_loader(root_dir, transform, other_dataset=None, num_classes=cfg.num_classes, classes_selection_method='sequential')
 
             elif 'DCFace'.lower() in root_dir.lower():
                 print(f'Loading train dataset \'{root_dir}\' ...')
