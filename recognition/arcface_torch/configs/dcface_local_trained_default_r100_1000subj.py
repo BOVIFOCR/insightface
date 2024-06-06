@@ -42,11 +42,11 @@ if uname.nodename == 'duo':
 
     # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
     # config.val_targets = ['']
-    config.val_targets = ['/datasets2/2nd_frcsyn_cvpr2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
+    config.val_targets = ['/datasets2/2nd_frcsyn_cvpr2024/datasets/real/CASIA-WebFace/faces_webface_112x112/lfw.bin',
                           '/datasets2/2nd_frcsyn_cvpr2024/datasets/real/CASIA-WebFace/faces_webface_112x112/cplfw.bin',
                           '/datasets2/2nd_frcsyn_cvpr2024/datasets/real/CASIA-WebFace/faces_webface_112x112/cfp_ff.bin',
-                          '/datasets2/2nd_frcsyn_cvpr2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_fp.bin',
-                          '/datasets2/2nd_frcsyn_cvpr2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/agedb_30.bin',
+                          '/datasets2/2nd_frcsyn_cvpr2024/datasets/real/CASIA-WebFace/faces_webface_112x112/cfp_fp.bin',
+                          '/datasets2/2nd_frcsyn_cvpr2024/datasets/real/CASIA-WebFace/faces_webface_112x112/agedb_30.bin',
                           '/datasets2/2nd_frcsyn_cvpr2024/datasets/real/CASIA-WebFace/faces_webface_112x112/calfw.bin',
                           'bupt']
     # config.val_targets = ['bupt']
