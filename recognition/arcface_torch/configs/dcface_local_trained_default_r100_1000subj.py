@@ -19,7 +19,10 @@ config.weight_decay = 5e-4
 # config.batch_size = 128
 # config.batch_size = 64
 config.batch_size = 16
-config.lr = 0.1
+
+# config.lr = 0.1
+config.lr = 0.01
+
 config.verbose = 2000
 # config.verbose = 10
 config.dali = False

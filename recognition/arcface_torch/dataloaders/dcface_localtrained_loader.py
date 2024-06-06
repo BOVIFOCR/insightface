@@ -40,7 +40,7 @@ class DCFaceLocalTrained_loader(Dataset):
         # self.path_files = self.append_dataset_name(self.path_files, dataset_name='dcface')
         self.subjs_list, self.subjs_dict = self.get_subj_dicts(self.path_files)
 
-        if num_classes > -1 and num_classes > len(self.subjs_list):
+        if num_classes > -1 and num_classes < len(self.subjs_list):
             self.subjs_list, self.subjs_dict, self.path_files = self.filter_subjs(self.subjs_list, self.subjs_dict, self.path_files, num_classes, classes_selection_method)
 
         self.samples_list = self.make_samples_list_with_labels(self.path_files, self.subjs_list, self.subjs_dict)
@@ -132,6 +132,7 @@ class DCFaceLocalTrained_loader(Dataset):
 
         # Bernardo
         img_path, subj_idx = self.final_samples_list[index]
+        print(img_path, subj_idx)
 
         if img_path.endswith('.jpg') or img_path.endswith('.jpeg') or img_path.endswith('.png'):
             rgb_data = self.load_img(img_path)
