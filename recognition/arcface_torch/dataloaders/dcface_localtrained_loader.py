@@ -132,7 +132,6 @@ class DCFaceLocalTrained_loader(Dataset):
 
         # Bernardo
         img_path, subj_idx = self.final_samples_list[index]
-        print(img_path, subj_idx)
 
         if img_path.endswith('.jpg') or img_path.endswith('.jpeg') or img_path.endswith('.png'):
             rgb_data = self.load_img(img_path)
