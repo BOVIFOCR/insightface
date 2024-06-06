@@ -38,7 +38,7 @@ config.train_rule = None             # default
 
 if uname.nodename == 'duo':
     # config.rec = "/train_tmp/faces_emore"
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'      # duo
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'      # duo
 
     # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
     config.val_targets = ['/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
@@ -60,13 +60,21 @@ if uname.nodename == 'duo':
 #     config.val_dataset_dir = ['/nobackup/unico/frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112']
 #     config.val_protocol_path = ['/nobackup/unico/frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
 
-# elif uname.nodename == 'daugman':
-#     config.rec = '/home/bjgbiesseck/datasets/synthetic/DCFace/dcface_wacv/organized'
-#
-#     config.val_targets = ['/home/bjgbiesseck/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin', '/home/bjgbiesseck/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_fp.bin', '/home/bjgbiesseck/datasets/real/1_CASIA-WebFace/faces_webface_112x112/agedb_30.bin', 'bupt']
-#     # config.val_targets = ['bupt']
-#     config.val_dataset_dir = ['/home/bjgbiesseck/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112']
-#     config.val_protocol_path = ['/groups/unico/frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
+elif uname.nodename == 'daugman':
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
+    config.val_targets = ['/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
+                          '/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cplfw.bin',
+                          '/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_ff.bin',
+                          '/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_fp.bin',
+                          '/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/agedb_30.bin',
+                          '/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/calfw.bin',
+                          'bupt']
+    # config.val_targets = ['bupt']
+    config.val_dataset_dir = ['/groups/unico/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112']
+    config.val_protocol_path = ['/groups/unico/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
+
 
 else:
     raise Exception(f'Paths of train and val datasets could not be found in file \'{__file__}\'')
