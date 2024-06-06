@@ -53,10 +53,10 @@ class CallBackVerification(object):
             if self.wandb_logger:
                 import wandb
                 self.wandb_logger.log({
-                    # f'Acc/val-Acc1 {self.ver_name_list[i]}': acc1,
-                    f'Acc/val-Acc2 {self.ver_name_list[i].split('/')[-1]}': acc2,
-                    # f'Acc/val-std1 {self.ver_name_list[i]}': std1,
-                    # f'Acc/val-std2 {self.ver_name_list[i]}': acc2,
+                    # f"Acc/val-Acc1 {self.ver_name_list[i]}": acc1,
+                    f"Acc/val-Acc2 {self.ver_name_list[i].split('/')[-1]}": acc2,
+                    # f"Acc/val-std1 {self.ver_name_list[i]}": std1,
+                    # f"Acc/val-std2 {self.ver_name_list[i]}": acc2,
                 })
 
             if acc2 > self.highest_acc_list[i]:
