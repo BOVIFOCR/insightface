@@ -70,7 +70,7 @@ def main(args):
             print("WandB Key must be provided in config file (base.py).")
             print(f"Config Error: {e}")
         # Initialize wandb
-        run_name = datetime.now().strftime("%y%m%d_%H%M") + f"_GPU{rank}"
+        # run_name = datetime.now().strftime("%y%m%d_%H%M") + f"_GPU{rank}"
         run_name = run_name if cfg.suffix_run_name is None else run_name + f"_{cfg.suffix_run_name}"
         try:
             wandb_logger = wandb.init(
