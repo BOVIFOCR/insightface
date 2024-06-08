@@ -91,10 +91,10 @@ else:
 
 
 # config.num_classes = 85742
-config.num_classes = 1000
+config.num_classes = 5000
 
 # config.num_image = 5822653
-config.num_image = 50000
+config.num_image = 250000
 
 config.num_epoch = 20
 # config.num_epoch = 30
@@ -116,7 +116,7 @@ config.using_wandb = True
 config.wandb_entity = 'biesseck'
 
 # config.wandb_project = "R100_DCFace_local_trained_default_1000subj"
-config.wandb_project = "dcface_fr_1000subj"
+config.wandb_project = "dcface_fr_5000subj"
 config.wandb_log_all = True
 
 # config.save_artifacts = False
