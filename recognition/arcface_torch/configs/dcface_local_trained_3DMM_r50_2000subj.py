@@ -21,8 +21,8 @@ config.weight_decay = 5e-4
 config.batch_size = 16
 
 # config.lr = 0.1
-# config.lr = 0.01
-config.lr = 0.001
+config.lr = 0.01
+# config.lr = 0.001
 
 config.verbose = 2000
 # config.verbose = 10
@@ -44,10 +44,10 @@ if uname.nodename == 'duo':
     # config.rec = "/train_tmp/faces_emore"
 
     # λ_3DMM = 0.01
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # λ_3DMM = 0.005
-    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
     config.val_targets = ['/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
