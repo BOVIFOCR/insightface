@@ -43,6 +43,9 @@ class DCFaceLocalTrained_loader(Dataset):
         if num_classes > -1 and num_classes < len(self.subjs_list):
             self.subjs_list, self.subjs_dict, self.path_files = self.filter_subjs(self.subjs_list, self.subjs_dict, self.path_files, num_classes, classes_selection_method)
 
+        if num_classes > -1:
+            assert num_classes == len(self.subjs_list)
+
         self.samples_list = self.make_samples_list_with_labels(self.path_files, self.subjs_list, self.subjs_dict)
         assert len(self.path_files) == len(self.samples_list), f'Error, len(self.path_files) ({len(self.path_files)}) must be equals to len(self.samples_list) ({len(self.samples_list)})'
         
