@@ -21,7 +21,8 @@ config.weight_decay = 5e-4
 config.batch_size = 16
 
 # config.lr = 0.1
-config.lr = 0.01
+# config.lr = 0.01
+config.lr = 0.005
 # config.lr = 0.001
 
 config.verbose = 2000
@@ -42,7 +43,10 @@ config.train_rule = None             # default
 
 if uname.nodename == 'duo':
     # config.rec = "/train_tmp/faces_emore"
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # BACKUP_INCOMPLETE
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112_BACKUP_INCOMPLETE'
 
     # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
     config.val_targets = ['/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
