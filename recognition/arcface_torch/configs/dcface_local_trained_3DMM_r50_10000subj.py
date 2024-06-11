@@ -21,8 +21,8 @@ config.weight_decay = 5e-4
 config.batch_size = 16
 
 # config.lr = 0.1
-# config.lr = 0.01
-config.lr = 0.005
+config.lr = 0.01
+# config.lr = 0.005
 # config.lr = 0.001
 
 config.verbose = 2000
@@ -43,7 +43,12 @@ config.train_rule = None             # default
 
 if uname.nodename == 'duo':
     # config.rec = "/train_tmp/faces_emore"
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # λ_3DMM = 0.01
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # λ_3DMM = 0.005
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
     config.val_targets = ['/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
@@ -59,7 +64,11 @@ if uname.nodename == 'duo':
 
 
 elif uname.nodename == 'diolkos':
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    # λ_3DMM = 0.01
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # λ_3DMM = 0.005
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     config.val_targets = ['/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
                           '/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cplfw.bin',
@@ -74,8 +83,14 @@ elif uname.nodename == 'diolkos':
 
 
 elif uname.nodename == 'daugman':
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
+    # λ_3DMM = 0.01
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # λ_3DMM = 0.005
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
     config.val_targets = ['/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
                           '/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cplfw.bin',
                           '/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_ff.bin',
@@ -87,15 +102,16 @@ elif uname.nodename == 'daugman':
     config.val_dataset_dir = ['/groups/unico/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112']
     config.val_protocol_path = ['/groups/unico/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
 
+
 else:
     raise Exception(f'Paths of train and val datasets could not be found in file \'{__file__}\'')
 
 
 # config.num_classes = 85742
-config.num_classes = 5000
+config.num_classes = 10000
 
 # config.num_image = 5822653
-config.num_image = 250000
+config.num_image = 500000
 
 config.num_epoch = 20
 # config.num_epoch = 30
@@ -117,7 +133,7 @@ config.using_wandb = True
 config.wandb_entity = 'biesseck'
 
 # config.wandb_project = "R100_DCFace_local_trained_default_1000subj"
-config.wandb_project = "dcface_fr_5000subj"
+config.wandb_project = "dcface_fr_10000subj"
 config.wandb_log_all = True
 
 # config.save_artifacts = False
