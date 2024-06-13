@@ -21,7 +21,8 @@ config.weight_decay = 5e-4
 config.batch_size = 16
 
 # config.lr = 0.1
-config.lr = 0.01
+# config.lr = 0.01
+config.lr = 0.005
 # config.lr = 0.001
 
 config.verbose = 2000
@@ -47,10 +48,10 @@ if uname.nodename == 'duo':
     # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # λ_3DMM = 0.005
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # λ_3DMM = 0.001
-    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.001_INCOMPLETE_epoch_005/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.001_INCOMPLETE_epoch_005/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
     config.val_targets = ['/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
@@ -65,25 +66,38 @@ if uname.nodename == 'duo':
     config.val_protocol_path = ['/datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
 
 
-# elif uname.nodename == 'diolkos':
-#     config.rec = '/nobackup/unico/frcsyn_wacv2024/datasets/synthetic/DCFace/dcface_wacv/organized'   # diolkos
-#
-#     config.val_targets = ['/home/bjgbiesseck/datasets/frcsyn_wacv2024/faces_webface_112x112/lfw.bin', '/home/bjgbiesseck/datasets/frcsyn_wacv2024/faces_webface_112x112/cfp_fp.bin', '/home/bjgbiesseck/datasets/frcsyn_wacv2024/faces_webface_112x112/agedb_30.bin', 'bupt']
-#     # config.val_targets = ['bupt']
-#     config.val_dataset_dir = ['/nobackup/unico/frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112']
-#     config.val_protocol_path = ['/nobackup/unico/frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
-
-
-elif uname.nodename == 'daugman':
-
+elif uname.nodename == 'diolkos':
     # λ_3DMM = 0.01
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # λ_3DMM = 0.005
     # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # λ_3DMM = 0.001
-    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.001_INCOMPLETE_epoch_005/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.001_INCOMPLETE_epoch_005/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    config.val_targets = ['/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
+                          '/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cplfw.bin',
+                          '/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_ff.bin',
+                          '/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_fp.bin',
+                          '/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/agedb_30.bin',
+                          '/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/calfw.bin',
+                          'bupt']
+    # config.val_targets = ['bupt']
+    config.val_dataset_dir = ['/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112']
+    config.val_protocol_path = ['/nobackup/unico/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
+
+
+elif uname.nodename == 'daugman':
+
+    # λ_3DMM = 0.01
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-28_0_WHOLE-DATASET_lamb3DMM=0.01_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # λ_3DMM = 0.005
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.005_epoch_009/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+
+    # λ_3DMM = 0.001
+    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_3DMM_e:10_spatial_dim:5_bias:0.0_casia_ir50_05-30_0_WHOLE-DATASET_lamb3DMM=0.001_INCOMPLETE_epoch_005/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # config.val_targets = ['lfw', 'cfp_fp', "agedb_30"]
     config.val_targets = ['/groups/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
