@@ -21,8 +21,11 @@ config.weight_decay = 5e-4
 config.batch_size = 16
 
 # config.lr = 0.1
+# config.lr = 0.06
+# config.lr = 0.05
+config.lr = 0.025
 # config.lr = 0.01
-config.lr = 0.005
+# config.lr = 0.005
 # config.lr = 0.001
 
 config.verbose = 2000
