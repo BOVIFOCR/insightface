@@ -59,7 +59,8 @@ if uname.nodename == 'duo':
 
 
 elif uname.nodename == 'diolkos':
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_default_epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
+    config.rec = '/nobackup/unico/datasets/face_recognition/synthetic/dcface/generated_images/last/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     config.val_targets = ['/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin',
                           '/nobackup/unico/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cplfw.bin',

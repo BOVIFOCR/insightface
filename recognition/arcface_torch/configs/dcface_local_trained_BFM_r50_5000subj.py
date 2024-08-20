@@ -22,8 +22,8 @@ config.batch_size = 16
 
 # config.lr = 0.1
 # config.lr = 0.05
-# config.lr = 0.01
-config.lr = 0.0075
+config.lr = 0.01
+# config.lr = 0.0075
 # config.lr = 0.005
 # config.lr = 0.001
 
@@ -47,10 +47,10 @@ if uname.nodename == 'duo':
     # config.rec = "/train_tmp/faces_emore"
 
     # λ_BFM = 0.01
-    # config.rec = ''
+    config.rec = '/datasets2/bjgbiesseck/face_recognition/dcface/generated_images/datamodule=DETERMINISTIC_e:10_spatial_dim:5_bias:0.0_casia_ir50_08-09_0_λBFM=0.01/epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # λ_BFM = 0.005
-    config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_06-20_0_WHOLE-DATASET_lambBFM=0.005_epoch_007'
+    # config.rec = '/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/generated_images/dcface_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_06-20_0_WHOLE-DATASET_lambBFM=0.005_epoch_007'
 
     # λ_BFM = 0.001
     # config.rec = ''
