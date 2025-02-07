@@ -70,7 +70,7 @@ if uname.nodename == 'duo':
 
 elif uname.nodename == 'diolkos':
     # λ_BFM = 0.01
-    # config.rec = ''
+    config.rec = '/nobackup/unico/datasets/face_recognition/dcface/datamodule=DETERMINISTIC_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-02_0_λid=0.0_λexp=0.01_λpose=0.01/generated_images/epoch_008/id:dcface_original_10000_synthetic_ids/sty:random_imgs_crops_112x112'
 
     # λ_BFM = 0.005
     # config.rec = ''
