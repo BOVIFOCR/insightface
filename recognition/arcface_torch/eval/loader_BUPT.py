@@ -105,9 +105,9 @@ class Loader_BUPT:
                 if flip == 1:
                     img = mx.ndarray.flip(data=img, axis=2)
                 data_list[flip][idx][:] = torch.from_numpy(img.asnumpy())
-            if idx % 1000 == 0:
-                print('loading pair', idx)
-        print(data_list[0].shape)
+            if idx % 100 == 0:
+                print(f"loading pairs {idx}/{len(pairs)*2}", end='\r')
+        print('\n', data_list[0].shape)
         return data_list, issame_list, races_list, subj_list
 
 
