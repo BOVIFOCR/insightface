@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import mxnet as mx
 from mxnet import ndarray as nd
+import copy
 
 
 class Loader_BUPT:
@@ -43,7 +44,10 @@ class Loader_BUPT:
             return protocol
 
 
-    def update_paths(self, protocol, data_dir, replace_ext='.png'):
+    def update_paths(self, protocol, data_dir, replace_ext='.png', inplace=True):
+        if not inplace:
+            protocol = copy.deepcopy(protocol)
+
         for i, pair in enumerate(protocol):
             sample0 = pair['sample0']
             sample1 = pair['sample1']
@@ -69,18 +73,18 @@ class Loader_BUPT:
     def load_dataset(self, protocol_file, data_dir, image_size, replace_ext='.png'):
         print(f"Loading protocol: \'{protocol_file}\'")
         pairs_orig = self.load_protocol(protocol_file)
-        # print('pairs_orig:', pairs_orig)
-        pairs_update = self.update_paths(pairs_orig, data_dir, replace_ext)
+        pairs_update = self.update_paths(pairs_orig, data_dir, replace_ext, inplace=False)
 
         data_list = []
         for flip in [0, 1]:
             data = torch.empty((len(pairs_update)*2, 3, image_size[0], image_size[1]))
             data_list.append(data)
 
-        issame_list    = np.array([bool(pairs_update[i]['pair_label']) for i in range(len(pairs_update))])
-        races_list     = np.array([sorted((pairs_update[i]['sample0_race'], pairs_update[i]['sample1_race'])) for i in range(len(pairs_update))])
-        subj_list      = np.array([sorted((pairs_update[i]['sample0_subj'], pairs_update[i]['sample1_subj'])) for i in range(len(pairs_update))])
-        samples_list   = np.array([sorted((pairs_update[i]['sample0'], pairs_update[i]['sample1'])) for i in range(len(pairs_update))])
+        issame_list               = np.array([bool(pairs_update[i]['pair_label']) for i in range(len(pairs_update))])
+        races_list                = np.array([sorted((pairs_update[i]['sample0_race'], pairs_update[i]['sample1_race'])) for i in range(len(pairs_update))])
+        subj_list                 = np.array([sorted((pairs_update[i]['sample0_subj'], pairs_update[i]['sample1_subj'])) for i in range(len(pairs_update))])
+        samples_orig_paths_list   = np.array([sorted((pairs_orig[i]['sample0'], pairs_orig[i]['sample1'])) for i in range(len(pairs_orig))])
+        samples_update_paths_list = np.array([sorted((pairs_update[i]['sample0'], pairs_update[i]['sample1'])) for i in range(len(pairs_update))])
         # for i, (label, races, subjs) in enumerate(zip(issame_list, races_list, subj_list)):
             # print(f'pair:{i} - label: {label} - races: {races} - subjs: {subjs}')
             # if races[0] == races[1]:
@@ -111,6 +115,6 @@ class Loader_BUPT:
             if idx % 100 == 0:
                 print(f"loading pairs {idx}/{len(pairs_update)*2}", end='\r')
         print('\n', data_list[0].shape)
-        return data_list, issame_list, races_list, subj_list, samples_list
+        return data_list, issame_list, races_list, subj_list, samples_orig_paths_list, samples_update_paths_list
 
 
