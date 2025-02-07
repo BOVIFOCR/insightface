@@ -1,3 +1,6 @@
+# duo
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --data-dir /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112 --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target bupt --protocol /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt --style-clusters-data /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
+
 """Helper for evaluation on the Labeled Faces in the Wild dataset 
 """
 
@@ -47,6 +50,11 @@ import argparse   # Bernardo
 import itertools
 
 from loader_BUPT import Loader_BUPT
+
+
+def load_dict(path: str) -> dict:
+    with open(path, 'rb') as file:
+        return pickle.load(file)
 
 
 def save_img(pathfile, img):
@@ -1032,7 +1040,7 @@ def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_lis
 
 
 @torch.no_grad()
-def test_analyze_races(args, data_set, backbone, batch_size, nfolds=10, races_combs=[]):
+def test_analyze_races(args, data_set, backbone, batch_size, nfolds=10, races_combs=[], style_clusters_data={}):
     data_list = data_set[0]
     issame_list = data_set[1]
     if len(data_set) > 2:
@@ -1179,6 +1187,15 @@ def dumpR(data_set,
                     protocol=pickle.HIGHEST_PROTOCOL)
 
 
+
+def find_index_string_containing_substring(string_list, substring):
+    for index, string in enumerate(string_list):
+        if substring in string:
+            return index
+    return -1  # Substring not found in any string
+
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='do verification')
@@ -1196,8 +1213,8 @@ if __name__ == '__main__':
     parser.add_argument('--target',
                         # default='lfw,cfp_ff,cfp_fp,agedb_30',          # original
                         # default='lfw,cfp_fp,agedb_30',                 # original
-                        default='lfw',                                   # Bernardo
-                        # default='bupt',                                # Bernardo
+                        # default='lfw',                                 # Bernardo
+                        default='bupt',                                  # Bernardo
                         help='test targets.')
     parser.add_argument('--protocol', default='/datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt', type=str, help='')
     parser.add_argument('--gpu', default=0, type=int, help='gpu id')
@@ -1212,6 +1229,8 @@ if __name__ == '__main__':
     parser.add_argument('--save-scores-at-thresh', type=float, default=-1.0, help='')   # Bernardo (0.5)
 
     parser.add_argument('--save-best-worst-pairs', default=0, type=int)
+
+    parser.add_argument('--style-clusters-data', default='', type=str)   # /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
 
     args = parser.parse_args()
 
@@ -1277,6 +1296,46 @@ if __name__ == '__main__':
             else:
                 raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
 
+        style_clusters_data = None
+        if args.style_clusters_data:
+            print(f'Loading subj-clusters: \'{args.style_clusters_data}\'')
+            style_clusters_data = load_dict(args.style_clusters_data)
+            print('Loaded style_clusters_data.keys():', style_clusters_data.keys())
+
+            # dict_keys(['files_paths', 'original_feats', 'cluster_ids', 'feats_tsne', 'cluster_centers_tsne', 'facial_attribs_paths', 'facial_attribs', 'dominant_races', 'races_styles_clusters_count', 'corresp_imgs_paths'])
+            # print("style_clusters_data['corresp_imgs_paths']:", style_clusters_data['corresp_imgs_paths'])
+            # print("len(style_clusters_data['corresp_imgs_paths']):", len(style_clusters_data['corresp_imgs_paths']))
+            # print("style_clusters_data['corresp_imgs_paths'][0]:", style_clusters_data['corresp_imgs_paths'][0])
+
+            style_clusters_pairs_labels = []
+            samples_orig_paths_list = data_set[4]
+            style_clusters_data_corresp_imgs_paths = style_clusters_data['corresp_imgs_paths']
+            style_clusters_ids = style_clusters_data['cluster_ids']
+            num_clusters = len(style_clusters_data['cluster_centers_tsne'])
+            for idx_pair_orig_paths, pair_orig_paths in enumerate(samples_orig_paths_list):
+                print(f"Loading samples clusters labels {idx_pair_orig_paths}/{len(samples_orig_paths_list)}", end='\r')
+                # print('pair_orig_paths:', pair_orig_paths)
+                sample0, _ = os.path.splitext(pair_orig_paths[0])
+                sample1, _ = os.path.splitext(pair_orig_paths[1])
+
+                sample0_idx_cluster_list = find_index_string_containing_substring(style_clusters_data_corresp_imgs_paths, sample0)
+                assert sample0_idx_cluster_list > -1, f"Error, substring of sample0 not found: '{sample0}'"
+                # print('sample0_idx_cluster_list:', sample0_idx_cluster_list)
+                # print(f"style_clusters_data_corresp_imgs_paths[{sample0_idx_cluster_list}]:", style_clusters_data_corresp_imgs_paths[sample0_idx_cluster_list])
+                sample1_idx_cluster_list = find_index_string_containing_substring(style_clusters_data_corresp_imgs_paths, sample1)
+                assert sample1_idx_cluster_list > -1, f"Error, substring of sample1 not found: '{sample1}'"
+                
+                sample0_cluster_label = int(style_clusters_ids[sample0_idx_cluster_list])
+                sample1_cluster_label = int(style_clusters_ids[sample1_idx_cluster_list])
+                assert sample0_cluster_label < num_clusters, f"Error, cluster label of sample0 ({sample0_cluster_label}) > num_clusters ({num_clusters})"
+                assert sample1_cluster_label < num_clusters, f"Error, cluster label of sample1 ({sample1_cluster_label}) > num_clusters ({num_clusters})"
+                style_clusters_pair_labels = (sample0_cluster_label, sample1_cluster_label)
+                # print('style_clusters_pair_labels:', style_clusters_pair_labels)
+                style_clusters_pairs_labels.append(style_clusters_pair_labels)
+            print()
+            assert len(style_clusters_pairs_labels) == len(samples_orig_paths_list)
+            style_clusters_data['pairs_cluster_ids'] = style_clusters_pairs_labels
+    # sys.exit(0)
 
     if args.mode == 0:
         for i in range(len(ver_list)):
@@ -1289,7 +1348,7 @@ if __name__ == '__main__':
                     races_combs = None
 
                 acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, ver_list[i], model, args.batch_size, args.nfolds, races_combs)
+                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, ver_list[i], model, args.batch_size, args.nfolds, races_combs, style_clusters_data)
                 results.append(acc2)
                 print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
                 # print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
