@@ -25,9 +25,10 @@
 
 
 import datetime
-import os
+import os, sys
 import pickle
 
+import torch
 import mxnet as mx
 import numpy as np
 import sklearn
@@ -36,8 +37,22 @@ from mxnet import ndarray as nd
 from scipy import interpolate
 from sklearn.decomposition import PCA
 from sklearn.model_selection import KFold
+from PIL import Image
+import matplotlib.pyplot as plt
+
+sys.path.insert(0, "../")
+from backbones import get_model
 
 import argparse   # Bernardo
+import itertools
+
+from loader_BUPT import Loader_BUPT
+
+
+def save_img(pathfile, img):
+    img = img.squeeze(0).permute(1, 2, 0).byte().numpy()
+    pil_img = Image.fromarray(img)
+    pil_img.save(pathfile, format="PNG")
 
 
 class LFold:
@@ -198,6 +213,7 @@ def evaluate(embeddings, actual_issame, nrof_folds=10, pca=0):
                                       nrof_folds=nrof_folds)
     return tpr, fpr, accuracy, val, val_std, far
 
+
 @torch.no_grad()
 def load_bin(path, image_size):
     try:
@@ -225,9 +241,9 @@ def load_bin(path, image_size):
     print(data_list[0].shape)
     return data_list, issame_list
 
+
 @torch.no_grad()
 def test(data_set, backbone, batch_size, nfolds=10):
-    print('testing verification..')
     data_list = data_set[0]
     issame_list = data_set[1]
     embeddings_list = []
@@ -242,15 +258,12 @@ def test(data_set, backbone, batch_size, nfolds=10):
             _data = data[bb - batch_size: bb]
             time0 = datetime.datetime.now()
             img = ((_data / 255) - 0.5) / 0.5
+            # print('img:', img)
+            # print('img.size():', img.size())
 
-            # Bernardo
-            img = img[None, :]
-            print('img:', img)
-            print('img.size():', img.size())
-            
-            # net_out: torch.Tensor = backbone(img)         # original
-            net_out: torch.Tensor = backbone.forward(img)   # Bernardo
-            
+            net_out: torch.Tensor = backbone(img)         # original
+            # net_out: torch.Tensor = backbone.forward(img)   # Bernardo
+
             _embeddings = net_out.detach().cpu().numpy()
             time_now = datetime.datetime.now()
             diff = time_now - time0
@@ -282,6 +295,841 @@ def test(data_set, backbone, batch_size, nfolds=10):
     _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
     acc2, std2 = np.mean(accuracy), np.std(accuracy)
     return acc1, std1, acc2, std2, _xnorm, embeddings_list
+
+
+
+
+
+
+
+###################################################
+# RACES ANALYSIS (African, Asian, Caucasian, Indian)
+###################################################
+
+def cosine_sim(embeddings1, embeddings2):
+    sims = np.zeros(embeddings1.shape[0])
+    for i in range(0,embeddings1.shape[0]):
+        sims[i] = float(np.maximum(np.dot(embeddings1[i],embeddings2[i])/(np.linalg.norm(embeddings1[i])*np.linalg.norm(embeddings2[i])), 0.0))
+    return sims
+
+
+def cosine_dist(embeddings1, embeddings2):
+    distances = 1. - cosine_sim(embeddings1, embeddings2)
+    return distances
+
+
+def compute_score(embeddings1, embeddings2, score):
+    if score == 'eucl-dist':
+        diff = np.subtract(embeddings1, embeddings2)
+        dist = np.sum(np.square(diff), 1)
+    elif score == 'cos-dist':
+        dist = cosine_dist(embeddings1, embeddings2)
+    elif score == 'cos-sim':
+        dist = cosine_sim(embeddings1, embeddings2)
+    return dist
+
+
+def get_predict_true(dist, threshold, score):
+    if score == 'eucl-dist' or score == 'cos-dist':
+        predict_issame = np.less(dist, threshold)
+    elif score == 'cos-sim':
+        predict_issame = np.greater_equal(dist, threshold)
+    return predict_issame
+
+
+def fuse_scores(score1, score2):
+    # score1 = (score1 - score1.min()) / (score1.max() - score1.min())
+    # score2 = (score2 - score2.min()) / (score2.max() - score2.min())
+    # score1 = score1 / score1.max()
+    # score2 = score2 / score2.max()
+
+    fused = (score1 + score2) / 2.0
+    return fused
+
+
+def get_races_combinations():
+    races = ['African', 'Asian', 'Caucasian', 'Indian']
+    races_comb = [(race, race) for race in races]
+    # races_comb += list(itertools.combinations(races, 2))
+    return sorted(races_comb)
+
+
+def get_avg_roc_metrics_races(metrics_races=[{}], races_combs=[]):
+    avg_roc_metrics = {}
+    for i, race_comb in enumerate(races_combs):
+        accs = [metrics_races[fold_idx][race_comb]['acc'] for fold_idx in range(len(metrics_races))]
+        tprs = [metrics_races[fold_idx][race_comb]['tpr'] for fold_idx in range(len(metrics_races))]
+        fprs = [metrics_races[fold_idx][race_comb]['fpr'] for fold_idx in range(len(metrics_races))]
+
+        avg_roc_metrics[race_comb] = {}
+        avg_roc_metrics[race_comb]['acc_mean'] = np.mean(accs)
+        avg_roc_metrics[race_comb]['acc_std']  = np.std(accs)
+        avg_roc_metrics[race_comb]['tpr_mean'] = np.mean(tprs)
+        avg_roc_metrics[race_comb]['tpr_std']  = np.std(tprs)
+        avg_roc_metrics[race_comb]['fpr_mean'] = np.mean(fprs)
+        avg_roc_metrics[race_comb]['fpr_std']  = np.std(fprs)
+    return avg_roc_metrics
+
+
+def get_avg_val_metrics_races(metrics_races=[{}], races_combs=[]):
+    avg_val_metrics = {}
+    for i, race_comb in enumerate(races_combs):
+        vals = [metrics_races[fold_idx][race_comb]['val'] for fold_idx in range(len(metrics_races))]
+        fars = [metrics_races[fold_idx][race_comb]['far'] for fold_idx in range(len(metrics_races))]
+
+        avg_val_metrics[race_comb] = {}
+        avg_val_metrics[race_comb]['val_mean'] = np.mean(vals)
+        avg_val_metrics[race_comb]['val_std']  = np.std(vals)
+        avg_val_metrics[race_comb]['far_mean'] = np.mean(fars)
+        avg_val_metrics[race_comb]['far_std']  = np.std(fars)
+    return avg_val_metrics
+
+
+
+def calculate_roc_analyze_races(args, thresholds,
+                  embeddings1,
+                  embeddings2,
+                  actual_issame,
+                  races_list,
+                  subj_list,
+                  nrof_folds=10,
+                  pca=0,
+                  races_combs=[]):
+    assert (embeddings1.shape[0] == embeddings2.shape[0])
+    assert (embeddings1.shape[1] == embeddings2.shape[1])
+    nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
+    nrof_thresholds = len(thresholds)
+    k_fold = LFold(n_splits=nrof_folds, shuffle=False)
+
+    tprs = np.zeros((nrof_folds, nrof_thresholds))
+    fprs = np.zeros((nrof_folds, nrof_thresholds))
+    accuracy = np.zeros((nrof_folds))
+    indices = np.arange(nrof_pairs)
+    metrics_races = [None] * nrof_folds
+
+    if pca == 0:
+        # diff = np.subtract(embeddings1, embeddings2)
+        # dist = np.sum(np.square(diff), 1)
+        # dist = cosine_dist(embeddings1, embeddings2)
+        dist = compute_score(embeddings1, embeddings2, args.score)
+        
+
+    # Bernardo
+    dist_fusion = None
+    if args.fusion_dist != '':
+        print(f'Loading dist for fusion: \'{args.fusion_dist}\'...')
+        dist_fusion = np.load(args.fusion_dist)
+        print(f'Fusing scores...\n')
+        assert dist.shape[0] == dist_fusion.shape[0]
+        dist = fuse_scores(dist, dist_fusion)
+
+    for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
+        if pca > 0:
+            print('doing pca on', fold_idx)
+            embed1_train = embeddings1[train_set]
+            embed2_train = embeddings2[train_set]
+            _embed_train = np.concatenate((embed1_train, embed2_train), axis=0)
+            pca_model = PCA(n_components=pca)
+            pca_model.fit(_embed_train)
+            embed1 = pca_model.transform(embeddings1)
+            embed2 = pca_model.transform(embeddings2)
+            embed1 = sklearn.preprocessing.normalize(embed1)
+            embed2 = sklearn.preprocessing.normalize(embed2)
+            # diff = np.subtract(embed1, embed2)
+            # dist = np.sum(np.square(diff), 1)
+            # dist = cosine_dist(embed1, embed2)
+            dist = compute_score(embed1, embed1, args.score)
+
+            if not dist_fusion is None:
+                print(f'Fusing scores (pca)...')
+                assert dist.shape[0] == dist_fusion.shape[0]
+                dist = fuse_scores(dist, dist_fusion)
+
+        # Find the best threshold for the fold
+        acc_train = np.zeros((nrof_thresholds))
+        for threshold_idx, threshold in enumerate(thresholds):
+            _, _, acc_train[threshold_idx], _ = calculate_accuracy_analyze_races(
+                args, threshold, dist[train_set], actual_issame[train_set], races_list=None, subj_list=None, races_combs=None)
+        best_threshold_index = np.argmax(acc_train)
+        for threshold_idx, threshold in enumerate(thresholds):
+            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy_analyze_races(
+                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None)
+        
+        if not races_list is None and not subj_list is None:
+            _, _, accuracy[fold_idx], metrics_races[fold_idx], _ = calculate_accuracy_analyze_races(
+                args, thresholds[best_threshold_index], dist[test_set],
+                actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs)
+        else:
+            _, _, accuracy[fold_idx], _ = calculate_accuracy_analyze_races(
+                args, thresholds[best_threshold_index], dist[test_set],
+                actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs)
+
+    avg_roc_metrics = None
+    if not races_list is None and not subj_list is None:
+        avg_roc_metrics = get_avg_roc_metrics_races(metrics_races, races_combs)
+    
+    tpr = np.mean(tprs, 0)
+    fpr = np.mean(fprs, 0)
+    return tpr, fpr, accuracy, avg_roc_metrics
+
+
+def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races_list, subj_list, races_combs):
+    # predict_issame = np.less(dist, threshold)
+    predict_issame = get_predict_true(dist, threshold, args.score)
+
+    tp = np.sum(np.logical_and(predict_issame, actual_issame))
+    fp = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))
+    tn = np.sum(np.logical_and(np.logical_not(predict_issame), np.logical_not(actual_issame)))
+    fn = np.sum(np.logical_and(np.logical_not(predict_issame), actual_issame))
+
+    tpr = 0 if (tp + fn == 0) else float(tp) / float(tp + fn)
+    fpr = 0 if (fp + tn == 0) else float(fp) / float(fp + tn)
+    acc = float(tp + tn) / dist.size
+
+    # race analysis (African, Asian, Caucasian, Indian)
+    if not races_list is None and not subj_list is None:
+        metrics_races = {}
+        for race_comb in races_combs:
+            metrics_races[race_comb] = {}
+
+        for i, race_comb in enumerate(races_combs):
+            indices_race_comb = np.where(np.all(races_list == race_comb, axis=1))[0]
+            metrics_races[race_comb]['tp'] = np.sum(np.logical_and(predict_issame[indices_race_comb], actual_issame[indices_race_comb]))
+            metrics_races[race_comb]['fp'] = np.sum(np.logical_and(predict_issame[indices_race_comb], np.logical_not(actual_issame[indices_race_comb])))
+            metrics_races[race_comb]['tn'] = np.sum(np.logical_and(np.logical_not(predict_issame[indices_race_comb]), np.logical_not(actual_issame[indices_race_comb])))
+            metrics_races[race_comb]['fn'] = np.sum(np.logical_and(np.logical_not(predict_issame[indices_race_comb]), actual_issame[indices_race_comb]))
+
+            metrics_races[race_comb]['tpr'] = 0 if (metrics_races[race_comb]['tp'] + metrics_races[race_comb]['fn'] == 0) else float(metrics_races[race_comb]['tp']) / float(metrics_races[race_comb]['tp'] + metrics_races[race_comb]['fn'])
+            metrics_races[race_comb]['fpr'] = 0 if (metrics_races[race_comb]['fp'] + metrics_races[race_comb]['tn'] == 0) else float(metrics_races[race_comb]['fp']) / float(metrics_races[race_comb]['fp'] + metrics_races[race_comb]['tn'])
+            metrics_races[race_comb]['acc'] = 0 if indices_race_comb.size == 0 else float(metrics_races[race_comb]['tp'] + metrics_races[race_comb]['tn']) / indices_race_comb.size
+
+    if races_list is None:
+        return tpr, fpr, acc, predict_issame
+    else:
+        return tpr, fpr, acc, metrics_races, predict_issame
+
+
+def calculate_fnmr_fmr_analyze_races(args, thresholds,
+                                    embeddings1,
+                                    embeddings2,
+                                    actual_issame,
+                                    fmr_targets,
+                                    races_list,
+                                    subj_list,
+                                    nrof_folds=10,
+                                    races_combs=[]):
+    assert (embeddings1.shape[0] == embeddings2.shape[0])
+    assert (embeddings1.shape[1] == embeddings2.shape[1])
+    nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
+    nrof_thresholds = len(thresholds)
+    k_fold = LFold(n_splits=nrof_folds, shuffle=False)
+
+    fnmr = {}
+    for fmr_target in fmr_targets:
+        fnmr[fmr_target] = np.zeros(nrof_folds)
+    fmr = np.zeros(nrof_folds)
+
+    # diff = np.subtract(embeddings1, embeddings2)
+    # dist = np.sum(np.square(diff), 1)
+    # dist = cosine_dist(embeddings1, embeddings2)
+    dist = compute_score(embeddings1, embeddings2, args.score)
+
+    indices = np.arange(nrof_pairs)
+    metrics_races = [None] * nrof_folds
+
+    # Bernardo
+    dist_fusion = None
+    if args.fusion_dist != '' and dist_fusion is None:
+        print(f'Loading dist for fusion: \'{args.fusion_dist}\'...')
+        dist_fusion = np.load(args.fusion_dist)
+        print(f'Fusing scores...\n')
+        assert dist.shape[0] == dist_fusion.shape[0]
+        dist = fuse_scores(dist, dist_fusion)
+
+    for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
+        # Find the threshold that gives FMR = fmr_target
+        fmr_train = np.zeros(nrof_thresholds)
+        for threshold_idx, threshold in enumerate(thresholds):
+            _, fmr_train[threshold_idx] = get_fnmr_fmr_analyze_races(
+                args, threshold, dist[train_set], actual_issame[train_set], races_list=None, subj_list=None, races_combs=None)
+
+        f = interpolate.interp1d(fmr_train, thresholds, kind='slinear')
+        for fmr_target in fmr_targets:
+            threshold = f(fmr_target)
+            fnmr[fmr_target][fold_idx], fmr[fold_idx] = get_fnmr_fmr_analyze_races(
+                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None)
+
+    fnmr_mean, fnmr_std = {}, {}
+    for fmr_target in fmr_targets:
+        fnmr_mean[fmr_target] = np.mean(fnmr[fmr_target])
+        fnmr_std[fmr_target] = np.std(fnmr[fmr_target])
+    fmr_mean = np.mean(fmr)
+    return fnmr_mean, fnmr_std, fmr_mean
+
+
+def get_fnmr_fmr_analyze_races(args, threshold, dist, actual_issame, races_list, subj_list, races_combs):
+    # predict_issame = np.less(dist, threshold)
+    predict_issame = get_predict_true(dist, threshold, args.score)
+
+    tp = np.sum(np.logical_and(predict_issame, actual_issame))
+    fp = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))
+    tn = np.sum(np.logical_and(np.logical_not(predict_issame), np.logical_not(actual_issame)))
+    fn = np.sum(np.logical_and(np.logical_not(predict_issame), actual_issame))
+
+    fnmr = 0 if (fn + tp == 0) else float(fn) / float(fn + tp)
+    fmr = 0  if (fp + tn == 0) else float(fp) / float(fp + tn)
+
+    return fnmr, fmr
+
+
+
+def calculate_val_analyze_races(args, thresholds,
+                  embeddings1,
+                  embeddings2,
+                  actual_issame,
+                  far_target,
+                  races_list,
+                  subj_list,
+                  nrof_folds=10,
+                  races_combs=[]):
+    assert (embeddings1.shape[0] == embeddings2.shape[0])
+    assert (embeddings1.shape[1] == embeddings2.shape[1])
+    nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
+    nrof_thresholds = len(thresholds)
+    k_fold = LFold(n_splits=nrof_folds, shuffle=False)
+
+    val = np.zeros(nrof_folds)
+    far = np.zeros(nrof_folds)
+
+    # diff = np.subtract(embeddings1, embeddings2)
+    # dist = np.sum(np.square(diff), 1)
+    # dist = cosine_dist(embeddings1, embeddings2)
+    dist = compute_score(embeddings1, embeddings2, args.score)
+
+    indices = np.arange(nrof_pairs)
+    metrics_races = [None] * nrof_folds
+
+    # Bernardo
+    dist_fusion = None
+    if args.fusion_dist != '' and dist_fusion is None:
+        print(f'Loading dist for fusion: \'{args.fusion_dist}\'...')
+        dist_fusion = np.load(args.fusion_dist)
+        print(f'Fusing scores...\n')
+        assert dist.shape[0] == dist_fusion.shape[0]
+        dist = fuse_scores(dist, dist_fusion)
+
+    for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
+        # Find the threshold that gives FAR = far_target
+        far_train = np.zeros(nrof_thresholds)
+        for threshold_idx, threshold in enumerate(thresholds):
+            _, far_train[threshold_idx] = calculate_val_far_analyze_races(
+                args, threshold, dist[train_set], actual_issame[train_set], races_list=None, subj_list=None, races_combs=None)
+        if np.max(far_train) >= far_target:
+            f = interpolate.interp1d(far_train, thresholds, kind='slinear')
+            threshold = f(far_target)
+        else:
+            threshold = 0.0
+
+        if not races_list is None and not subj_list is None:
+            val[fold_idx], far[fold_idx], metrics_races[fold_idx] = calculate_val_far_analyze_races(
+                args, threshold, dist[test_set], actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs)
+        else:
+            val[fold_idx], far[fold_idx] = calculate_val_far_analyze_races(
+                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs)
+
+    avg_val_metrics = None
+    if not races_list is None and not subj_list is None:
+        avg_val_metrics = get_avg_val_metrics_races(metrics_races, races_combs)
+
+    val_mean = np.mean(val)
+    far_mean = np.mean(far)
+    val_std = np.std(val)
+    return val_mean, val_std, far_mean, avg_val_metrics
+
+
+def calculate_val_far_analyze_races(args, threshold, dist, actual_issame, races_list, subj_list, races_combs):
+    # predict_issame = np.less(dist, threshold)
+    predict_issame = get_predict_true(dist, threshold, args.score)
+
+    true_accept = np.sum(np.logical_and(predict_issame, actual_issame))
+    false_accept = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))
+    n_same = np.sum(actual_issame)
+    n_diff = np.sum(np.logical_not(actual_issame))
+    # print(true_accept, false_accept)
+    # print(n_same, n_diff)
+    val = float(true_accept) / float(n_same)
+    far = float(false_accept) / float(n_diff)
+
+    # race analysis (African, Asian, Caucasian, Indian)
+    if not races_list is None and not subj_list is None:
+        metrics_races = {}
+        for race_comb in races_combs:
+            metrics_races[race_comb] = {}
+
+        for i, race_comb in enumerate(races_combs):
+            indices_race_comb = np.where(np.all(races_list == race_comb, axis=1))[0]
+            metrics_races[race_comb]['true_accept'] = np.sum(np.logical_and(predict_issame[indices_race_comb], actual_issame[indices_race_comb]))
+            metrics_races[race_comb]['false_accept'] = np.sum(np.logical_and(predict_issame[indices_race_comb], np.logical_not(actual_issame[indices_race_comb])))
+            metrics_races[race_comb]['n_same'] = np.sum(actual_issame[indices_race_comb])
+            metrics_races[race_comb]['n_diff'] = np.sum(np.logical_not(actual_issame[indices_race_comb]))
+
+            metrics_races[race_comb]['val'] = float(metrics_races[race_comb]['true_accept']) / float(metrics_races[race_comb]['n_same'])
+            metrics_races[race_comb]['far'] = float(metrics_races[race_comb]['false_accept']) / float(metrics_races[race_comb]['n_diff'])
+    
+    if races_list is None:
+        return val, far
+    else:
+        return val, far, metrics_races
+
+
+def calculate_best_acc(args, thresholds,
+                  embeddings1,
+                  embeddings2,
+                  actual_issame,
+                  races_list,
+                  subj_list,
+                  races_combs=[]):
+    assert (embeddings1.shape[0] == embeddings2.shape[0])
+    assert (embeddings1.shape[1] == embeddings2.shape[1])
+    # nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
+    nrof_thresholds = len(thresholds)
+    # k_fold = LFold(n_splits=nrof_folds, shuffle=False)
+
+    # tprs = np.zeros((nrof_thresholds))
+    # fprs = np.zeros((nrof_thresholds))
+    accuracy = np.zeros((nrof_thresholds))
+    # indices = np.arange(nrof_pairs)
+    # metrics_races = [None] * nrof_folds
+
+    # diff = np.subtract(embeddings1, embeddings2)
+    # dist = np.sum(np.square(diff), 1)
+    # dist = cosine_dist(embeddings1, embeddings2)
+    dist = compute_score(embeddings1, embeddings2, args.score)
+
+    # Bernardo
+    dist_fusion = None
+    if args.fusion_dist != '':
+        print(f'Loading dist for fusion: \'{args.fusion_dist}\'...')
+        dist_fusion = np.load(args.fusion_dist)
+        print(f'Fusing scores...\n')
+        assert dist.shape[0] == dist_fusion.shape[0]
+        dist = fuse_scores(dist, dist_fusion)
+
+    # Find best threshold
+    for threshold_idx, threshold in enumerate(thresholds):
+        _, _, accuracy[threshold_idx], _ = calculate_accuracy_analyze_races(
+            args, threshold, dist, actual_issame, races_list=None, subj_list=None, races_combs=None)
+    best_threshold_index = np.argmax(accuracy)
+    best_threshold = thresholds[best_threshold_index]
+    _, _, best_accuracy, _ = calculate_accuracy_analyze_races(
+                args, best_threshold, dist, actual_issame, races_list=None, subj_list=None, races_combs=None)
+
+    return best_accuracy, best_threshold
+
+
+def calculate_acc_at_threshold(args, one_threshold,
+                  embeddings1,
+                  embeddings2,
+                  actual_issame,
+                  races_list,
+                  subj_list,
+                  races_combs=[]):
+    assert (embeddings1.shape[0] == embeddings2.shape[0])
+    assert (embeddings1.shape[1] == embeddings2.shape[1])
+    # nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
+    # nrof_thresholds = len(thresholds)
+    # k_fold = LFold(n_splits=nrof_folds, shuffle=False)
+
+    # tprs = np.zeros((nrof_thresholds))
+    # fprs = np.zeros((nrof_thresholds))
+    # accuracy = np.zeros((nrof_thresholds))
+    # indices = np.arange(nrof_pairs)
+    # metrics_races = [None] * nrof_folds
+
+    # diff = np.subtract(embeddings1, embeddings2)
+    # dist = np.sum(np.square(diff), 1)
+    # dist = cosine_dist(embeddings1, embeddings2)
+    dist = compute_score(embeddings1, embeddings2, args.score)
+    predict_issame = get_predict_true(dist, one_threshold, args.score)
+    predict_labels_at_thresh = predict_issame.astype(int)
+
+    # Bernardo
+    dist_fusion = None
+    if args.fusion_dist != '':
+        print(f'Loading dist for fusion: \'{args.fusion_dist}\'...')
+        dist_fusion = np.load(args.fusion_dist)
+        print(f'Fusing scores...\n')
+        assert dist.shape[0] == dist_fusion.shape[0]
+        dist = fuse_scores(dist, dist_fusion)
+
+    # compute metrics at one_threshold
+    _, _, accuracy_at_thresh = calculate_accuracy_analyze_races(
+                args, one_threshold, dist, actual_issame, races_list=None, subj_list=None, races_combs=None)
+
+    return accuracy_at_thresh, dist, predict_labels_at_thresh
+
+
+
+def save_scores_pred_labels_frcsyn_format(file_path, float_array, int_array):
+    if len(float_array) != len(int_array):
+        raise ValueError("Both arrays must have the same length")
+    with open(file_path, 'w') as file:
+        for float_val, int_val in zip(float_array, int_array):
+            file.write(f"{float_val},{int_val}\n")
+
+
+def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, path_folder, chart_title, chart_subtitle='', pair_type=''):
+    for idx in range(args.save_best_worst_pairs):
+        if dist[idxs_save[idx]] == -np.inf or dist[idxs_save[idx]] == np.inf:
+            break
+
+        image1 = imgs[idxs_save[idx]*2]
+        image2 = imgs[idxs_save[idx]*2+1]
+        image1 = image1.squeeze(0).permute(1, 2, 0).byte().numpy()
+        image2 = image2.squeeze(0).permute(1, 2, 0).byte().numpy()
+        
+        # Create figure
+        plt.clf()
+        fig_size=(7, 4)
+        fig, axes = plt.subplots(1, 2, figsize=fig_size)
+        
+        # Display images side by side
+        axes[0].imshow(image1)
+        axes[0].axis('on')
+        axes[1].imshow(image2)
+        axes[1].axis('on')
+        
+        # Add title and subtitle if provided
+        fig.suptitle(chart_title + 
+                     f'    actual: {str(bool(actual_issame[idxs_save[idx]]))}    pred: {str(bool(predict_issame[idxs_save[idx]]))} ({pair_type})', fontsize=16)
+        
+        fig.text(0.5, 0.85, chart_subtitle +
+                            f'    idx: {idxs_save[idx]}    cossim: {dist[idxs_save[idx]]:.3f}',
+                            ha='center', fontsize=12)
+        
+        # Save the figure as a PNG file
+        # output_path = os.path.join(path_folder, f'{pair_type}_{str(idx).zfill(5)}_pair={str(idxs_save[idx]).zfill(5)}_cossim={dist[idxs_save[idx]]:.3f}'+'.png')
+        output_path = os.path.join(path_folder, f'{pair_type}_pair={str(idxs_save[idx]).zfill(5)}_{str(idx).zfill(5)}_cossim={dist[idxs_save[idx]]:.3f}'+'.png')
+        plt.savefig(output_path, format='png')
+        plt.clf()
+        plt.close(fig)
+
+
+
+def save_best_and_worst_pairs(args, thresholds,
+                              embeddings1,
+                              embeddings2,
+                              actual_issame,
+                              races_list,
+                              subj_list,
+                              nrof_folds=10,
+                              pca=0,
+                              races_combs=[],
+                              imgs=[]):
+    assert (embeddings1.shape[0] == embeddings2.shape[0])
+    assert (embeddings1.shape[1] == embeddings2.shape[1])
+    nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
+    nrof_thresholds = len(thresholds)
+    k_fold = LFold(n_splits=nrof_folds, shuffle=False)
+    predict_issame = np.full_like(actual_issame, 0)     # Bernardo
+
+    tprs = np.zeros((nrof_folds, nrof_thresholds))
+    fprs = np.zeros((nrof_folds, nrof_thresholds))
+    accuracy = np.zeros((nrof_folds))
+    indices = np.arange(nrof_pairs)
+    metrics_races = [None] * nrof_folds
+
+    if pca == 0:
+        # diff = np.subtract(embeddings1, embeddings2)
+        # dist = np.sum(np.square(diff), 1)
+        # dist = cosine_dist(embeddings1, embeddings2)
+        dist = compute_score(embeddings1, embeddings2, args.score)
+        
+
+    # Bernardo
+    dist_fusion = None
+    if args.fusion_dist != '':
+        print(f'Loading dist for fusion: \'{args.fusion_dist}\'...')
+        dist_fusion = np.load(args.fusion_dist)
+        print(f'Fusing scores...\n')
+        assert dist.shape[0] == dist_fusion.shape[0]
+        dist = fuse_scores(dist, dist_fusion)
+
+    for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
+        if pca > 0:
+            print('doing pca on', fold_idx)
+            embed1_train = embeddings1[train_set]
+            embed2_train = embeddings2[train_set]
+            _embed_train = np.concatenate((embed1_train, embed2_train), axis=0)
+            pca_model = PCA(n_components=pca)
+            pca_model.fit(_embed_train)
+            embed1 = pca_model.transform(embeddings1)
+            embed2 = pca_model.transform(embeddings2)
+            embed1 = sklearn.preprocessing.normalize(embed1)
+            embed2 = sklearn.preprocessing.normalize(embed2)
+            # diff = np.subtract(embed1, embed2)
+            # dist = np.sum(np.square(diff), 1)
+            # dist = cosine_dist(embed1, embed2)
+            dist = compute_score(embed1, embed1, args.score)
+
+            if not dist_fusion is None:
+                print(f'Fusing scores (pca)...')
+                assert dist.shape[0] == dist_fusion.shape[0]
+                dist = fuse_scores(dist, dist_fusion)
+
+        # Find the best threshold for the fold
+        acc_train = np.zeros((nrof_thresholds))
+        for threshold_idx, threshold in enumerate(thresholds):
+            _, _, acc_train[threshold_idx], _ = calculate_accuracy_analyze_races(
+                args, threshold, dist[train_set], actual_issame[train_set], races_list=None, subj_list=None, races_combs=None)
+        best_threshold_index = np.argmax(acc_train)
+        for threshold_idx, threshold in enumerate(thresholds):
+            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, predict_issame[test_set] = calculate_accuracy_analyze_races(
+                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None)
+        
+        if not races_list is None and not subj_list is None:
+            _, _, accuracy[fold_idx], metrics_races[fold_idx], predict_issame[test_set] = calculate_accuracy_analyze_races(
+                args, thresholds[best_threshold_index], dist[test_set],
+                actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs)
+        else:
+            _, _, accuracy[fold_idx], predict_issame[test_set] = calculate_accuracy_analyze_races(
+                args, thresholds[best_threshold_index], dist[test_set],
+                actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs)
+
+    tp = np.logical_and(predict_issame, actual_issame)
+    fp = np.logical_and(predict_issame, np.logical_not(actual_issame))
+    tn = np.logical_and(np.logical_not(predict_issame), np.logical_not(actual_issame))
+    fn = np.logical_and(np.logical_not(predict_issame), actual_issame)
+    # print('tp:', tp, '    np.sum(tp):', np.sum(tp), '    dist[tp]:', dist[tp])   # np.sum(tp): 2905   dist[tp]: [0.40210061 0.79455505 0.68250193 ... 0.56299254 0.80737444 0.57917398]
+    # print('fp:', fp, '    np.sum(fp):', np.sum(fp), '    dist[tp]:', dist[fp])   # np.sum(fp): 44     dist[tp]: [0.23618177 0.30582174 0.23749101 0.24565418 0.25256271 0.23503945
+    # print('tn:', tn, '    np.sum(tn):', np.sum(tn), '    dist[tp]:', dist[tn])   # np.sum(tn): 2956   dist[tp]: [0.07079436 0.04933054 0.         ... 0.         0.07501368 0.10491953]
+    # print('fn:', fn, '    np.sum(fn):', np.sum(fn), '    dist[tp]:', dist[fn])   # np.sum(fn): 95     dist[tp]: [0.22380015 0.19986544 0.18416269 0.05134246 0.         0.1915093
+    # sys.exit(0)
+    dist_fp = np.full_like(dist, -np.inf); dist_fp[fp] = dist[fp]
+    dist_fn = np.full_like(dist,  np.inf); dist_fn[fn] = dist[fn]
+    worst_fp_idx = np.argsort(dist_fp)[::-1]
+    worst_fn_idx = np.argsort(dist_fn)
+    # print('worst_fp:', worst_fp)
+    # print(f'dist_fp[worst_fp_idx][:{args.save_best_worst_pairs}]:', dist_fp[worst_fp_idx][:args.save_best_worst_pairs])
+    # print('worst_fn:', worst_fn_idx)
+    # print(f'dist_fn[worst_fn_idx][:{args.save_best_worst_pairs}]:', dist_fn[worst_fn_idx][:args.save_best_worst_pairs])
+    # sys.exit(0)
+
+    # print('imgs.shape:', imgs.shape)
+    path_eval_pairs = os.path.join(os.path.dirname(args.model), 'eval_pairs')
+    path_eval_dataset = os.path.join(path_eval_pairs, args.target)
+
+    pair_type = 'fp'
+    path_fp_dataset = os.path.join(path_eval_dataset, pair_type)
+    os.makedirs(path_fp_dataset, exist_ok=True)
+    chart_title = f'Dataset: {args.target}'
+    chart_subtitle = ''
+    save_img_pairs(args, actual_issame, predict_issame, dist_fp, worst_fp_idx, imgs, path_fp_dataset, chart_title, chart_subtitle, pair_type)
+    
+    pair_type = 'fn'
+    path_fn_dataset = os.path.join(path_eval_dataset, pair_type)
+    os.makedirs(path_fn_dataset, exist_ok=True)
+    chart_title = f'Dataset: {args.target}'
+    chart_subtitle = ''
+    save_img_pairs(args, actual_issame, predict_issame, dist_fn, worst_fn_idx, imgs, path_fn_dataset, chart_title, chart_subtitle, pair_type)
+    # sys.exit(0)
+
+
+
+def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_list, nrof_folds=10, pca=0, races_combs=[], imgs=[]):
+    # Calculate evaluation metrics
+    thresholds = np.arange(0, 4, 0.01)
+    if args.score == 'cos-sim':
+        thresholds = np.flipud(thresholds)
+    embeddings1 = embeddings[0::2]
+    embeddings2 = embeddings[1::2]
+    print('Doing ROC analysis...')
+    tpr, fpr, accuracy, avg_roc_metrics = calculate_roc_analyze_races(args, thresholds,
+                                                embeddings1,
+                                                embeddings2,
+                                                np.asarray(actual_issame),
+                                                races_list,
+                                                subj_list,
+                                                nrof_folds=nrof_folds,
+                                                pca=pca,
+                                                races_combs=races_combs)
+
+    thresholds = np.arange(0, 4, 0.001)
+    if args.score == 'cos-sim':
+        thresholds = np.flipud(thresholds)
+    print('Doing TAR@FAR analysis...')
+    val, val_std, far, avg_val_metrics = calculate_val_analyze_races(args, thresholds,
+                                                embeddings1,
+                                                embeddings2,
+                                                np.asarray(actual_issame),
+                                                1e-3,
+                                                races_list,
+                                                subj_list,
+                                                nrof_folds=nrof_folds,
+                                                races_combs=races_combs)
+
+    thresholds = np.arange(0, 4, 0.0001)
+    if args.score == 'cos-sim':
+        thresholds = np.flipud(thresholds)
+    fmr_targets = [1e-2, 1e-3, 1e-4]
+    print('Doing FNMR@FMR analysis...')
+    fnmr_mean, fnmr_std, fmr_mean = calculate_fnmr_fmr_analyze_races(args, thresholds,
+                                                embeddings1,
+                                                embeddings2,
+                                                np.asarray(actual_issame),
+                                                fmr_targets,
+                                                races_list,
+                                                subj_list,
+                                                nrof_folds=nrof_folds,
+                                                races_combs=races_combs)
+    
+    thresholds = np.arange(0, 4, 0.01)
+    if args.score == 'cos-sim':
+        thresholds = np.flipud(thresholds)
+    print('Doing ACC@BEST-THRESH analysis...')
+    best_acc, best_thresh = calculate_best_acc(args, thresholds,
+                                                embeddings1,
+                                                embeddings2,
+                                                np.asarray(actual_issame),
+                                                races_list,
+                                                subj_list,
+                                                races_combs=races_combs)
+
+    acc_at_thresh = None
+    if args.save_scores_at_thresh > 0:
+        one_threshold = args.save_scores_at_thresh
+        print('Doing ACC@THRESH analysis...')
+        acc_at_thresh, dist, pred_labels_at_thresh = calculate_acc_at_threshold(args, one_threshold,
+                                                        embeddings1,
+                                                        embeddings2,
+                                                        np.asarray(actual_issame),
+                                                        races_list,
+                                                        subj_list,
+                                                        races_combs=races_combs)
+
+        file_scores_labels = args.model.split('/')[-1].split('.')[0] + '_target=' + args.target.split('/')[-1].split('.')[0] + f'_frcsyn_scores_labels_thresh={one_threshold}.txt'
+        path_file_scores_labels = os.path.join(os.path.dirname(args.model), file_scores_labels)
+        print(f'    Saving scores and pred labels at \'{path_file_scores_labels}\'...')
+        save_scores_pred_labels_frcsyn_format(path_file_scores_labels, dist, pred_labels_at_thresh)
+
+
+    if args.save_best_worst_pairs > 0:
+        print('Saving best/worst pairs...')
+        save_best_and_worst_pairs(args, thresholds,
+                                  embeddings1,
+                                  embeddings2,
+                                  np.asarray(actual_issame),
+                                  races_list,
+                                  subj_list,
+                                  nrof_folds=nrof_folds,
+                                  pca=pca,
+                                  races_combs=races_combs,
+                                  imgs=imgs)
+
+    print('--------------------')
+    return tpr, fpr, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
+            best_acc, best_thresh, acc_at_thresh
+
+
+@torch.no_grad()
+def test_analyze_races(args, data_set, backbone, batch_size, nfolds=10, races_combs=[]):
+    data_list = data_set[0]
+    issame_list = data_set[1]
+    if len(data_set) > 2:
+        races_list = data_set[2]
+        subj_list = data_set[3]
+    else:
+        races_list, subj_list = None, None
+
+    path_embeddings = os.path.join(args.data_dir, 'embeddings_list.pkl')
+
+    if not os.path.exists(path_embeddings) or not args.use_saved_embedd:
+        print('\nComputing embeddings...')
+        embeddings_list = []
+        time_consumed = 0.0
+        for i in range(len(data_list)):
+            data = data_list[i]
+            embeddings = None
+            ba = 0
+            while ba < data.shape[0]:
+                bb = min(ba + batch_size, data.shape[0])
+                print(f'{i+1}/{len(data_list)} - {bb}/{data.shape[0]}', end='\r')
+                count = bb - ba
+                _data = data[bb - batch_size: bb]
+                time0 = datetime.datetime.now()
+                img = ((_data / 255) - 0.5) / 0.5
+                # print('img:', img)
+                # print('img.size():', img.size())
+
+                net_out: torch.Tensor = backbone(img)             # original
+                # net_out: torch.Tensor = backbone.forward(img)   # Bernardo
+
+                _embeddings = net_out.detach().cpu().numpy()
+                time_now = datetime.datetime.now()
+                diff = time_now - time0
+                time_consumed += diff.total_seconds()
+                if embeddings is None:
+                    embeddings = np.zeros((data.shape[0], _embeddings.shape[1]))
+                embeddings[ba:bb, :] = _embeddings[(batch_size - count):, :]
+                ba = bb
+            embeddings_list.append(embeddings)
+            print('')
+        print('infer time', time_consumed)
+        
+        print(f'Saving embeddings in file \'{path_embeddings}\' ...')
+        write_object_to_file(path_embeddings, embeddings_list)
+    else:
+        print(f'Loading embeddings from file \'{path_embeddings}\' ...')
+        embeddings_list = read_object_from_file(path_embeddings)
+
+    print(f'Normalizing embeddings...')
+    _xnorm = 0.0
+    _xnorm_cnt = 0
+    for embed in embeddings_list:
+        for i in range(embed.shape[0]):
+            _em = embed[i]
+            _norm = np.linalg.norm(_em)
+            _xnorm += _norm
+            _xnorm_cnt += 1
+    _xnorm /= _xnorm_cnt
+
+    embeddings = embeddings_list[0].copy()
+    embeddings = sklearn.preprocessing.normalize(embeddings)
+    acc1 = 0.0
+    std1 = 0.0
+    embeddings = embeddings_list[0] + embeddings_list[1]
+    embeddings = sklearn.preprocessing.normalize(embeddings)
+    print(embeddings.shape)
+
+    # TESTS
+    # print('data_list[0][0]:', data_list[0][0])
+    # print('data_list[0].shape:', data_list[0].shape)   # torch.Size([12000, 3, 112, 112])
+    # sys.exit(0)
+    # idx_img = 0; save_img(f'./image_{idx_img}.png', data_list[0][idx_img])
+    # idx_img = 1; save_img(f'./image_{idx_img}.png', data_list[0][idx_img])
+    # idx_img = 2; save_img(f'./image_{idx_img}.png', data_list[0][idx_img])
+    # idx_img = 3; save_img(f'./image_{idx_img}.png', data_list[0][idx_img])
+    # sys.exit(0)
+
+    print('\nDoing races test evaluation...')
+    # _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
+    _, _, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
+        best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, embeddings, issame_list, races_list, subj_list, nrof_folds=nfolds, races_combs=races_combs, imgs=data_list[0])
+    acc2, std2 = np.mean(accuracy), np.std(accuracy)
+    return acc1, std1, acc2, std2, _xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
+            best_acc, best_thresh, acc_at_thresh
+
+
+def read_object_from_file(path):
+    with open(path, 'rb') as fid:
+        any_obj = pickle.load(fid)
+    return any_obj
+
+
+def write_object_to_file(path, any_obj):
+    with open(path, 'wb') as fid:
+        pickle.dump(any_obj, fid)
+
 
 
 def dumpR(data_set,
@@ -335,81 +1183,71 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='do verification')
     # general
-    # parser.add_argument('--data-dir', default='', help='')                                               # original
-    parser.add_argument('--data-dir', default='/datasets1/bjgbiesseck/MS-Celeb-1M/faces_emore', help='')   # Bernardo
+    # parser.add_argument('--data-dir', default='', help='')                                                                                   # original
+    parser.add_argument('--data-dir', default='/datasets1/bjgbiesseck/MS-Celeb-1M/faces_emore', help='')                                     # Bernardo
+    # parser.add_argument('--data-dir', default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112', help='')   # Bernardo
 
+    # parser.add_argument('--network', default='r100', type=str, help='')   # default
+    parser.add_argument('--network', default='r50', type=str, help='')      # Bernardo
     parser.add_argument('--model',
-                        # default='../model/softmax,50',                 # original
-                        default='../../model/model-r100-ii/model,0',     # Bernardo
+                        # default='../trained_models/ms1mv3_arcface_r100_fp16/backbone.pth',          # Bernardo
+                        default='../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt',   # (Trained only on CASIA-Webface)   Bernardo
                         help='path to load model.')
     parser.add_argument('--target',
                         # default='lfw,cfp_ff,cfp_fp,agedb_30',          # original
+                        # default='lfw,cfp_fp,agedb_30',                 # original
                         default='lfw',                                   # Bernardo
+                        # default='bupt',                                # Bernardo
                         help='test targets.')
+    parser.add_argument('--protocol', default='/datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt', type=str, help='')
     parser.add_argument('--gpu', default=0, type=int, help='gpu id')
     parser.add_argument('--batch-size', default=32, type=int, help='')
     parser.add_argument('--max', default='', type=str, help='')
     parser.add_argument('--mode', default=0, type=int, help='')
     parser.add_argument('--nfolds', default=10, type=int, help='')
+    parser.add_argument('--use-saved-embedd', action='store_true')
+
+    parser.add_argument('--fusion-dist', type=str, default='', help='')                 # Bernardo
+    parser.add_argument('--score', default='cos-sim', type=str, help='')                # Bernardo ('cos-sim', 'cos-dist' or 'eucl-dist')
+    parser.add_argument('--save-scores-at-thresh', type=float, default=-1.0, help='')   # Bernardo (0.5)
+
+    parser.add_argument('--save-best-worst-pairs', default=0, type=int)
+
     args = parser.parse_args()
+
+
     image_size = [112, 112]
     print('image_size', image_size)
-    
-    # ctx = mx.gpu(args.gpu)   # original
-    ctx = mx.cpu()             # Bernardo
+
+    ctx = mx.gpu(args.gpu)   # original
+    # ctx = mx.cpu()         # Bernardo
 
     nets = []
     vec = args.model.split(',')
     prefix = args.model.split(',')[0]
     epochs = []
 
-    # Bernardo
-    print('args.model:', args.model)
-    print('vec:', vec)
-    print('prefix:', prefix)
-
-    if len(vec) == 1:
-        pdir = os.path.dirname(prefix)
-        for fname in os.listdir(pdir):
-            if not fname.endswith('.params'):
-                continue
-            _file = os.path.join(pdir, fname)
-            if _file.startswith(prefix):
-                epoch = int(fname.split('.')[0].split('-')[1])
-                epochs.append(epoch)
-        epochs = sorted(epochs, reverse=True)
-        if len(args.max) > 0:
-            _max = [int(x) for x in args.max.split(',')]
-            assert len(_max) == 2
-            if len(epochs) > _max[1]:
-                epochs = epochs[_max[0]:_max[1]]
-
-    else:
-        epochs = [int(x) for x in vec[1].split('|')]
-    print('model number', len(epochs))
+    # LOADING MODEL WITH PYTORCH
+    nets = []
     time0 = datetime.datetime.now()
-    for epoch in epochs:
-        print('loading', prefix, epoch)
-        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, epoch)
-        # arg_params, aux_params = ch_dev(arg_params, aux_params, ctx)
-        all_layers = sym.get_internals()
-        sym = all_layers['fc1_output']
-        model = mx.mod.Module(symbol=sym, context=ctx, label_names=None)
-        # model.bind(data_shapes=[('data', (args.batch_size, 3, image_size[0], image_size[1]))], label_shapes=[('softmax_label', (args.batch_size,))])
-        model.bind(data_shapes=[('data', (args.batch_size, 3, image_size[0],
-                                          image_size[1]))])
-        model.set_params(arg_params, aux_params)
-        nets.append(model)
+    print(f'Loading trained model \'{args.model}\'...')
+    weight = torch.load(args.model)
+    resnet = get_model(args.network, dropout=0, fp16=False).cuda()
+    resnet.load_state_dict(weight)
+    model = torch.nn.DataParallel(resnet)
+    model.eval()
+    nets.append(model)
     time_now = datetime.datetime.now()
     diff = time_now - time0
     print('model loading time', diff.total_seconds())
+
 
     ver_list = []
     ver_name_list = []
     for name in args.target.split(','):
 
         # Bernardo
-        print('name:', name)
+        print('\ndataset name:', name)
         print('args.data_dir:', args.data_dir)
 
         path = os.path.join(args.data_dir, name + ".bin")
@@ -418,21 +1256,69 @@ if __name__ == '__main__':
             data_set = load_bin(path, image_size)
             ver_list.append(data_set)
             ver_name_list.append(name)
+            # sys.exit(0)
+        
+        else:
+            if name.lower() == 'bupt':
+                path_unified_dataset = os.path.join(args.data_dir, 'dataset.pkl')
+                if not os.path.exists(path_unified_dataset):
+                    print(f'Loading individual images from folder \'{args.data_dir}\' ...')
+                    data_set = Loader_BUPT().load_dataset(args.protocol, args.data_dir, image_size)
+                    print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
+                    write_object_to_file(path_unified_dataset, data_set)
+                else:
+                    print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
+                    data_set = read_object_from_file(path_unified_dataset)
 
-    # Bernardo
-    print('nets:', nets)
+                ver_list.append(data_set)
+                ver_name_list.append(name)
+                # print('data_set:', data_set)
+                # sys.exit(0)
+            else:
+                raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
+
 
     if args.mode == 0:
         for i in range(len(ver_list)):
             results = []
             for model in nets:
-                acc1, std1, acc2, std2, xnorm, embeddings_list = test(
-                    ver_list[i], model, args.batch_size, args.nfolds)
-                print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
-                print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
-                print('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
+
+                if name.lower() == 'bupt':
+                    races_combs = get_races_combinations()
+                else:
+                    races_combs = None
+
+                acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
+                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, ver_list[i], model, args.batch_size, args.nfolds, races_combs)
                 results.append(acc2)
-            print('Max of [%s] is %1.5f' % (ver_name_list[i], np.max(results)))
+                print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
+                # print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
+                print('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
+                print('[%s]TAR: %1.5f+-%1.5f    FAR: %1.5f' % (ver_name_list[i], val, val_std, far))
+
+                for fmr_target in list(fnmr_mean.keys()):
+                    print('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
+
+                if not races_combs is None:
+                    for race_comb in races_combs:
+                        race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
+                        print('[%s]Acc %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']), end='    ')
+                        print('[%s]TAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']), end='    ')
+                        print('[%s]FAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
+
+                print('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
+                if not acc_at_thresh is None:
+                    print('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
+
+                # else:
+                    # acc1, std1, acc2, std2, xnorm, embeddings_list = test(
+                    #     ver_list[i], model, args.batch_size, args.nfolds)
+                    # print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
+                    # print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
+                    # print('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
+                    # results.append(acc2)
+
+            # print('Max of [%s] is %1.5f' % (ver_name_list[i], np.max(results)))
     elif args.mode == 1:
         raise ValueError
     else:
