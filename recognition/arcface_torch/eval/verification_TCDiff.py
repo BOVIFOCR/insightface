@@ -402,7 +402,8 @@ def calculate_roc_analyze_races(args, thresholds,
                   subj_list,
                   nrof_folds=10,
                   pca=0,
-                  races_combs=[]):
+                  races_combs=[],
+                  style_clusters_data={}):
     assert (embeddings1.shape[0] == embeddings2.shape[0])
     assert (embeddings1.shape[1] == embeddings2.shape[1])
     nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
@@ -944,7 +945,7 @@ def save_best_and_worst_pairs(args, thresholds,
 
 
 
-def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_list, nrof_folds=10, pca=0, races_combs=[], imgs=[]):
+def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_list, nrof_folds=10, pca=0, races_combs=[], imgs=[], style_clusters_data={}):
     # Calculate evaluation metrics
     thresholds = np.arange(0, 4, 0.01)
     if args.score == 'cos-sim':
@@ -960,7 +961,8 @@ def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_lis
                                                 subj_list,
                                                 nrof_folds=nrof_folds,
                                                 pca=pca,
-                                                races_combs=races_combs)
+                                                races_combs=races_combs,
+                                                style_clusters_data=style_clusters_data)
 
     thresholds = np.arange(0, 4, 0.001)
     if args.score == 'cos-sim':
@@ -1122,7 +1124,7 @@ def test_analyze_races(args, data_set, backbone, batch_size, nfolds=10, races_co
     print('\nDoing races test evaluation...')
     # _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
     _, _, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-        best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, embeddings, issame_list, races_list, subj_list, nrof_folds=nfolds, races_combs=races_combs, imgs=data_list[0])
+        best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, embeddings, issame_list, races_list, subj_list, nrof_folds=nfolds, races_combs=races_combs, imgs=data_list[0], style_clusters_data=style_clusters_data)
     acc2, std2 = np.mean(accuracy), np.std(accuracy)
     return acc1, std1, acc2, std2, _xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
             best_acc, best_thresh, acc_at_thresh
