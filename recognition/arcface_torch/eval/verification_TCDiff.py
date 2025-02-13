@@ -544,30 +544,32 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
 
             # style faces clusters analysis
             if not style_clusters_data is None:
-                metrics_races[race_comb]['tp_clusters']  = np.zeros((nclusters,))
-                metrics_races[race_comb]['fp_clusters']  = np.zeros((nclusters,))
-                metrics_races[race_comb]['tn_clusters']  = np.zeros((nclusters,))
-                metrics_races[race_comb]['fn_clusters']  = np.zeros((nclusters,))
-                metrics_races[race_comb]['acc_clusters'] = np.zeros((nclusters,))
+                metrics_races[race_comb]['tp_clusters']                   = np.zeros((nclusters,))
+                metrics_races[race_comb]['fp_clusters']                   = np.zeros((nclusters,))
+                metrics_races[race_comb]['tn_clusters']                   = np.zeros((nclusters,))
+                metrics_races[race_comb]['fn_clusters']                   = np.zeros((nclusters,))
+                metrics_races[race_comb]['acc_clusters']                  = np.zeros((nclusters,))
+                metrics_races[race_comb]['num_samples_clusters']          = np.zeros((nclusters,))
+                metrics_races[race_comb]['num_pairs_same_style_clusters'] = np.zeros((nclusters,))
 
                 cluster_pairs_labels_race_sample0 = style_clusters_pairs_labels[indices_race_comb][:,0]
                 cluster_pairs_labels_race_sample1 = style_clusters_pairs_labels[indices_race_comb][:,1]
 
                 indices_tp_race = np.where(logical_tp == True)[0]
-                metrics_races[race_comb]['tp_clusters'][cluster_pairs_labels_race_sample0[indices_tp_race]] += 1
-                metrics_races[race_comb]['tp_clusters'][cluster_pairs_labels_race_sample1[indices_tp_race]] += 1
+                np.add.at(metrics_races[race_comb]['tp_clusters'], cluster_pairs_labels_race_sample0[indices_tp_race], 1)
+                np.add.at(metrics_races[race_comb]['tp_clusters'], cluster_pairs_labels_race_sample1[indices_tp_race], 1)
 
                 indices_fp_race = np.where(logical_fp == True)[0]
-                metrics_races[race_comb]['fp_clusters'][cluster_pairs_labels_race_sample0[indices_fp_race]] += 1
-                metrics_races[race_comb]['fp_clusters'][cluster_pairs_labels_race_sample1[indices_fp_race]] += 1
-            
+                np.add.at(metrics_races[race_comb]['fp_clusters'], cluster_pairs_labels_race_sample0[indices_fp_race], 1)
+                np.add.at(metrics_races[race_comb]['fp_clusters'], cluster_pairs_labels_race_sample1[indices_fp_race], 1)
+
                 indices_tn_race = np.where(logical_tn == True)[0]
-                metrics_races[race_comb]['tn_clusters'][cluster_pairs_labels_race_sample0[indices_tn_race]] += 1
-                metrics_races[race_comb]['tn_clusters'][cluster_pairs_labels_race_sample1[indices_tn_race]] += 1
+                np.add.at(metrics_races[race_comb]['tn_clusters'], cluster_pairs_labels_race_sample0[indices_tn_race], 1)
+                np.add.at(metrics_races[race_comb]['tn_clusters'], cluster_pairs_labels_race_sample1[indices_tn_race], 1)
 
                 indices_fn_race = np.where(logical_fn == True)[0]
-                metrics_races[race_comb]['fn_clusters'][cluster_pairs_labels_race_sample0[indices_fn_race]] += 1
-                metrics_races[race_comb]['fn_clusters'][cluster_pairs_labels_race_sample1[indices_fn_race]] += 1
+                np.add.at(metrics_races[race_comb]['fn_clusters'], cluster_pairs_labels_race_sample0[indices_fn_race], 1)
+                np.add.at(metrics_races[race_comb]['fn_clusters'], cluster_pairs_labels_race_sample1[indices_fn_race], 1)
 
                 metrics_races[race_comb]['acc_clusters'] = (metrics_races[race_comb]['tp_clusters'] +
                                                             metrics_races[race_comb]['tn_clusters']) / (metrics_races[race_comb]['tp_clusters'] + 
@@ -575,6 +577,9 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
                                                                                                         metrics_races[race_comb]['tn_clusters'] +
                                                                                                         metrics_races[race_comb]['fn_clusters'])
                 metrics_races[race_comb]['acc_clusters'][np.where(np.isnan(metrics_races[race_comb]['acc_clusters']))[0]] = 0
+
+                np.add.at(metrics_races[race_comb]['num_samples_clusters'], cluster_pairs_labels_race_sample0, 1)
+                np.add.at(metrics_races[race_comb]['num_samples_clusters'], cluster_pairs_labels_race_sample1, 1)
 
     if races_list is None:
         return tpr, fpr, acc, predict_issame
