@@ -99,9 +99,13 @@ class Loader_BUPT:
             # img = mx.image.imdecode(_bin)
             idx_pair = int(idx/2)
             if idx % 2 == 0:
-                img = cv2.imread(pairs_update[idx_pair]['sample0'])
+                img_path = pairs_update[idx_pair]['sample0']
+                # img = cv2.imread(pairs_update[idx_pair]['sample0'])
             else:
-                img = cv2.imread(pairs_update[idx_pair]['sample1'])
+                img_path = pairs_update[idx_pair]['sample1']
+                # img = cv2.imread(pairs_update[idx_pair]['sample1'])
+            assert os.path.isfile(img_path), f"Error, file not found: '{img_path}'"
+            img = cv2.imread(img_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = mx.nd.array(img)
 
