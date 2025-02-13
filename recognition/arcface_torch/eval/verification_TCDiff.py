@@ -38,6 +38,7 @@ import sklearn
 import torch
 from mxnet import ndarray as nd
 from scipy import interpolate
+from scipy.stats import entropy
 from sklearn.decomposition import PCA
 from sklearn.model_selection import KFold
 from PIL import Image
@@ -356,10 +357,12 @@ def fuse_scores(score1, score2):
 
 
 def get_races_combinations():
-    races = ['African', 'Asian', 'Caucasian', 'Indian']
+    # races = ['African', 'Asian', 'Caucasian', 'Indian']
+    races = ['Asian', 'Indian', 'African', 'Caucasian']
     races_comb = [(race, race) for race in races]
     # races_comb += list(itertools.combinations(races, 2))
-    return sorted(races_comb)
+    # return sorted(races_comb)
+    return races_comb
 
 
 def get_avg_roc_metrics_races(metrics_races=[{}], races_combs=[]):
@@ -376,6 +379,14 @@ def get_avg_roc_metrics_races(metrics_races=[{}], races_combs=[]):
         avg_roc_metrics[race_comb]['tpr_std']  = np.std(tprs)
         avg_roc_metrics[race_comb]['fpr_mean'] = np.mean(fprs)
         avg_roc_metrics[race_comb]['fpr_std']  = np.std(fprs)
+
+        accs_clusters = [metrics_races[fold_idx][race_comb]['acc_clusters'] for fold_idx in range(len(metrics_races))]
+        avg_roc_metrics[race_comb]['acc_clusters_mean'] = np.mean(np.stack(accs_clusters), axis=0)
+        avg_roc_metrics[race_comb]['acc_clusters_std']  = np.std(np.stack(accs_clusters), axis=0)
+
+        # print(f"avg_roc_metrics[{race_comb}]['acc_clusters_mean']:", avg_roc_metrics[race_comb]['acc_clusters_mean'])
+        # sys.exit(0)
+
     return avg_roc_metrics
 
 
@@ -415,6 +426,7 @@ def calculate_roc_analyze_races(args, thresholds,
     accuracy = np.zeros((nrof_folds))
     indices = np.arange(nrof_pairs)
     metrics_races = [None] * nrof_folds
+    metrics_style_clusters = [None] * nrof_folds
 
     if pca == 0:
         # diff = np.subtract(embeddings1, embeddings2)
@@ -458,20 +470,26 @@ def calculate_roc_analyze_races(args, thresholds,
         acc_train = np.zeros((nrof_thresholds))
         for threshold_idx, threshold in enumerate(thresholds):
             _, _, acc_train[threshold_idx], _ = calculate_accuracy_analyze_races(
-                args, threshold, dist[train_set], actual_issame[train_set], races_list=None, subj_list=None, races_combs=None)
+                args, threshold, dist[train_set], actual_issame[train_set], races_list=None, subj_list=None, races_combs=None, style_clusters_data=None)
         best_threshold_index = np.argmax(acc_train)
         for threshold_idx, threshold in enumerate(thresholds):
             tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy_analyze_races(
-                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None)
+                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None, style_clusters_data=None)
         
         if not races_list is None and not subj_list is None:
             _, _, accuracy[fold_idx], metrics_races[fold_idx], _ = calculate_accuracy_analyze_races(
                 args, thresholds[best_threshold_index], dist[test_set],
-                actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs)
+                actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs, style_clusters_data=None)
+
+            if not style_clusters_data is None:
+                _, _, accuracy[fold_idx], metrics_races[fold_idx], _ = calculate_accuracy_analyze_races(
+                    args, thresholds[best_threshold_index], dist[test_set],
+                    actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs, style_clusters_data=style_clusters_data)
+
         else:
             _, _, accuracy[fold_idx], _ = calculate_accuracy_analyze_races(
                 args, thresholds[best_threshold_index], dist[test_set],
-                actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs)
+                actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs, style_clusters_data=None)
 
     avg_roc_metrics = None
     if not races_list is None and not subj_list is None:
@@ -482,7 +500,7 @@ def calculate_roc_analyze_races(args, thresholds,
     return tpr, fpr, accuracy, avg_roc_metrics
 
 
-def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races_list, subj_list, races_combs):
+def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races_list, subj_list, races_combs, style_clusters_data):
     # predict_issame = np.less(dist, threshold)
     predict_issame = get_predict_true(dist, threshold, args.score)
 
@@ -495,6 +513,10 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
     fpr = 0 if (fp + tn == 0) else float(fp) / float(fp + tn)
     acc = float(tp + tn) / dist.size
 
+    if not style_clusters_data is None:
+        nclusters = len(style_clusters_data['cluster_centers_tsne'])
+        style_clusters_pairs_labels = style_clusters_data['pairs_cluster_ids']
+
     # race analysis (African, Asian, Caucasian, Indian)
     if not races_list is None and not subj_list is None:
         metrics_races = {}
@@ -503,14 +525,56 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
 
         for i, race_comb in enumerate(races_combs):
             indices_race_comb = np.where(np.all(races_list == race_comb, axis=1))[0]
-            metrics_races[race_comb]['tp'] = np.sum(np.logical_and(predict_issame[indices_race_comb], actual_issame[indices_race_comb]))
-            metrics_races[race_comb]['fp'] = np.sum(np.logical_and(predict_issame[indices_race_comb], np.logical_not(actual_issame[indices_race_comb])))
-            metrics_races[race_comb]['tn'] = np.sum(np.logical_and(np.logical_not(predict_issame[indices_race_comb]), np.logical_not(actual_issame[indices_race_comb])))
-            metrics_races[race_comb]['fn'] = np.sum(np.logical_and(np.logical_not(predict_issame[indices_race_comb]), actual_issame[indices_race_comb]))
+
+            logical_tp = np.logical_and(predict_issame[indices_race_comb], actual_issame[indices_race_comb])
+            logical_fp = np.logical_and(predict_issame[indices_race_comb], np.logical_not(actual_issame[indices_race_comb]))
+            logical_tn = np.logical_and(np.logical_not(predict_issame[indices_race_comb]), np.logical_not(actual_issame[indices_race_comb]))
+            logical_fn = np.logical_and(np.logical_not(predict_issame[indices_race_comb]), actual_issame[indices_race_comb])
+
+            metrics_races[race_comb]['tp'] = np.sum(logical_tp)
+            metrics_races[race_comb]['fp'] = np.sum(logical_fp)
+            metrics_races[race_comb]['tn'] = np.sum(logical_tn)
+            metrics_races[race_comb]['fn'] = np.sum(logical_fn)
 
             metrics_races[race_comb]['tpr'] = 0 if (metrics_races[race_comb]['tp'] + metrics_races[race_comb]['fn'] == 0) else float(metrics_races[race_comb]['tp']) / float(metrics_races[race_comb]['tp'] + metrics_races[race_comb]['fn'])
             metrics_races[race_comb]['fpr'] = 0 if (metrics_races[race_comb]['fp'] + metrics_races[race_comb]['tn'] == 0) else float(metrics_races[race_comb]['fp']) / float(metrics_races[race_comb]['fp'] + metrics_races[race_comb]['tn'])
             metrics_races[race_comb]['acc'] = 0 if indices_race_comb.size == 0 else float(metrics_races[race_comb]['tp'] + metrics_races[race_comb]['tn']) / indices_race_comb.size
+            # print('indices_race_comb:', indices_race_comb, '    type(indices_race_comb):', type(indices_race_comb))
+            # sys.exit(0)
+
+            # style faces clusters analysis
+            if not style_clusters_data is None:
+                metrics_races[race_comb]['tp_clusters']  = np.zeros((nclusters,))
+                metrics_races[race_comb]['fp_clusters']  = np.zeros((nclusters,))
+                metrics_races[race_comb]['tn_clusters']  = np.zeros((nclusters,))
+                metrics_races[race_comb]['fn_clusters']  = np.zeros((nclusters,))
+                metrics_races[race_comb]['acc_clusters'] = np.zeros((nclusters,))
+
+                cluster_pairs_labels_race_sample0 = style_clusters_pairs_labels[indices_race_comb][:,0]
+                cluster_pairs_labels_race_sample1 = style_clusters_pairs_labels[indices_race_comb][:,1]
+
+                indices_tp_race = np.where(logical_tp == True)[0]
+                metrics_races[race_comb]['tp_clusters'][cluster_pairs_labels_race_sample0[indices_tp_race]] += 1
+                metrics_races[race_comb]['tp_clusters'][cluster_pairs_labels_race_sample1[indices_tp_race]] += 1
+
+                indices_fp_race = np.where(logical_fp == True)[0]
+                metrics_races[race_comb]['fp_clusters'][cluster_pairs_labels_race_sample0[indices_fp_race]] += 1
+                metrics_races[race_comb]['fp_clusters'][cluster_pairs_labels_race_sample1[indices_fp_race]] += 1
+            
+                indices_tn_race = np.where(logical_tn == True)[0]
+                metrics_races[race_comb]['tn_clusters'][cluster_pairs_labels_race_sample0[indices_tn_race]] += 1
+                metrics_races[race_comb]['tn_clusters'][cluster_pairs_labels_race_sample1[indices_tn_race]] += 1
+
+                indices_fn_race = np.where(logical_fn == True)[0]
+                metrics_races[race_comb]['fn_clusters'][cluster_pairs_labels_race_sample0[indices_fn_race]] += 1
+                metrics_races[race_comb]['fn_clusters'][cluster_pairs_labels_race_sample1[indices_fn_race]] += 1
+
+                metrics_races[race_comb]['acc_clusters'] = (metrics_races[race_comb]['tp_clusters'] +
+                                                            metrics_races[race_comb]['tn_clusters']) / (metrics_races[race_comb]['tp_clusters'] + 
+                                                                                                        metrics_races[race_comb]['fp_clusters'] +
+                                                                                                        metrics_races[race_comb]['tn_clusters'] +
+                                                                                                        metrics_races[race_comb]['fn_clusters'])
+                metrics_races[race_comb]['acc_clusters'][np.where(np.isnan(metrics_races[race_comb]['acc_clusters']))[0]] = 0
 
     if races_list is None:
         return tpr, fpr, acc, predict_issame
@@ -727,11 +791,11 @@ def calculate_best_acc(args, thresholds,
     # Find best threshold
     for threshold_idx, threshold in enumerate(thresholds):
         _, _, accuracy[threshold_idx], _ = calculate_accuracy_analyze_races(
-            args, threshold, dist, actual_issame, races_list=None, subj_list=None, races_combs=None)
+            args, threshold, dist, actual_issame, races_list=None, subj_list=None, races_combs=None, style_clusters_data=None)
     best_threshold_index = np.argmax(accuracy)
     best_threshold = thresholds[best_threshold_index]
     _, _, best_accuracy, _ = calculate_accuracy_analyze_races(
-                args, best_threshold, dist, actual_issame, races_list=None, subj_list=None, races_combs=None)
+                args, best_threshold, dist, actual_issame, races_list=None, subj_list=None, races_combs=None, style_clusters_data=None)
 
     return best_accuracy, best_threshold
 
@@ -1198,6 +1262,96 @@ def find_index_string_containing_substring(string_list, substring):
 
 
 
+def save_styles_per_race_performance_bars_chart(perf_metrics, global_title, output_path):
+    races = list(perf_metrics.keys())
+    ndarrays = [perf_metrics[race]['acc_clusters_mean'] for race in races]
+    stats = [perf_metrics[race]['acc_clusters_mean_metrics'] for race in races]
+
+    if len(ndarrays) != len(races) or len(stats) != len(races):
+        raise ValueError("The number of ndarrays and stats must match the number of subtitles.")
+
+    # Set the global maximum value for consistent y-axis scaling
+    # global_max = 0.05  # 5%
+    # global_max = 0.1   # 10%
+    global_max = 1.0     # 100%
+
+    n_subplots = len(ndarrays)
+    fig_height = 10
+    fig, axes = plt.subplots(n_subplots, 2, figsize=(16, fig_height), constrained_layout=True, 
+                              gridspec_kw={"width_ratios": [3, 1]})
+
+    if n_subplots == 1:
+        axes = [axes]
+
+    fig.suptitle(global_title, fontsize=16, weight='bold')
+
+    for i, ((bar_ax, stat_ax), arr, stat, subtitle) in enumerate(zip(axes, ndarrays, stats, races)):
+        # Plot bar chart for ndarrays
+        bar_ax.bar(range(len(arr)), arr)
+        bar_ax.set_ylim(0, global_max)
+        bar_ax.set_yticks([0, global_max])
+        bar_ax.set_title(f'{subtitle} (styles)', fontsize=14)
+        if i == len(ndarrays) - 1:
+            bar_ax.set_xlabel("Face Styles", fontsize=12)
+        bar_ax.set_ylabel("Accuracy", fontsize=12)
+
+        # Set x-ticks and labels for bar_ax
+        bar_ax.set_xticks(range(len(arr)))
+        bar_ax.set_xticklabels(range(len(arr)), fontsize=8, rotation=90)
+
+        # Plot vertical bar chart for statistics
+        stat_labels = list(stat.keys())
+        stat_values = list(stat.values())
+        bars = stat_ax.bar(stat_labels, stat_values, color="orange")
+        stat_ax.set_title(f'{subtitle} (statistics)', fontsize=14)
+        stat_ax.set_ylim(0, 2)
+        stat_ax.set_ylabel("Value", fontsize=10)
+
+        # Add value annotations to the bars
+        for bar, value in zip(bars, stat_values):
+            stat_ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05, f'{value:.3f}', 
+                         ha='center', va='bottom', fontsize=14)
+
+    plt.savefig(output_path, format='png')
+    plt.close(fig)
+
+
+
+def compute_statistical_metrics(performance_values):
+    # values_sum = np.sum(performance_values)
+    # assert values_sum == 0.0 or (values_sum >= 0.99 and values_sum <= 1.0), f'np.sum(performance_values) is {values_sum}, should be in [0.99, 1.0]'
+    stats = {}
+
+    mean, std_dev = np.mean(performance_values), np.std(performance_values)
+    # stats['mean'] = mean
+    # stats['std'] = std_dev
+
+    num_bins = 10
+    bins = np.linspace(performance_values.min(), performance_values.max(), num_bins + 1)
+    hist, _ = np.histogram(performance_values, bins=bins)
+    probabilities = hist / len(performance_values)
+    ent = entropy(probabilities, base=2)
+    max_entropy = np.log2(num_bins)
+    stats['entropy'] = 1 - (ent / max_entropy)  # normalized_entropy
+
+    # gini_index = 1 - np.sum(performance_values**2)
+    # stats['gini'] = gini_index
+
+    cv = 0.0
+    if std_dev > 0 and mean > 0:
+        cv = std_dev / mean
+    stats['cv'] = cv
+
+    uniform_prob = np.ones_like(probabilities) / len(probabilities)
+    probabilities = probabilities[probabilities > 0]
+    uniform_prob = uniform_prob[:len(probabilities)]
+    kl_div = np.sum(probabilities * (np.log2(probabilities) - np.log2(uniform_prob)))
+    stats['kl_div'] = kl_div
+
+    return stats
+
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='do verification')
@@ -1336,7 +1490,8 @@ if __name__ == '__main__':
                 style_clusters_pairs_labels.append(style_clusters_pair_labels)
             print()
             assert len(style_clusters_pairs_labels) == len(samples_orig_paths_list)
-            style_clusters_data['pairs_cluster_ids'] = style_clusters_pairs_labels
+            # style_clusters_data['pairs_cluster_ids'] = style_clusters_pairs_labels
+            style_clusters_data['pairs_cluster_ids'] = np.array(style_clusters_pairs_labels)
     # sys.exit(0)
 
     if args.mode == 0:
@@ -1371,13 +1526,19 @@ if __name__ == '__main__':
                 if not acc_at_thresh is None:
                     print('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
 
-                # else:
-                    # acc1, std1, acc2, std2, xnorm, embeddings_list = test(
-                    #     ver_list[i], model, args.batch_size, args.nfolds)
-                    # print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
-                    # print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
-                    # print('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
-                    # results.append(acc2)
+
+                if not style_clusters_data is None:
+                    print('Computing distributions statiscs...')
+                    for idx_race, race in enumerate(list(avg_roc_metrics.keys())):
+                        avg_roc_metrics[race]['acc_clusters_mean_metrics'] = compute_statistical_metrics(avg_roc_metrics[race]['acc_clusters_mean'])
+                        # print(f"{race}: {avg_roc_metrics[race]}")
+
+                    global_title = f"Face Verification by Race and Face Style Cluster - Dataset={args.target}"
+                    output_dir = os.path.dirname(args.model)
+                    output_path = os.path.join(output_dir, f"accuracies_by_race_and_face_style_cluster_dataset={args.target}_nclusters={len(style_clusters_data['cluster_centers_tsne'])}.png")
+                    print(f"Saving accuracies chart: '{output_path}'")
+                    save_styles_per_race_performance_bars_chart(avg_roc_metrics, global_title, output_path)
+
 
             # print('Max of [%s] is %1.5f' % (ver_name_list[i], np.max(results)))
     elif args.mode == 1:
