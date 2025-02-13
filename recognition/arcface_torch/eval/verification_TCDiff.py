@@ -1454,6 +1454,9 @@ if __name__ == '__main__':
 
         style_clusters_data = None
         if args.style_clusters_data:
+            assert len(data_set) > 4, f"len(data_set) == {len(data_set)}, it doesn't have the paths of protocol images. Delete or rename the file '{path_unified_dataset}' and re-run this code."
+            samples_orig_paths_list = data_set[4]
+
             print(f'Loading subj-clusters: \'{args.style_clusters_data}\'')
             style_clusters_data = load_dict(args.style_clusters_data)
             print('Loaded style_clusters_data.keys():', style_clusters_data.keys())
@@ -1464,7 +1467,6 @@ if __name__ == '__main__':
             # print("style_clusters_data['corresp_imgs_paths'][0]:", style_clusters_data['corresp_imgs_paths'][0])
 
             style_clusters_pairs_labels = []
-            samples_orig_paths_list = data_set[4]
             style_clusters_data_corresp_imgs_paths = style_clusters_data['corresp_imgs_paths']
             style_clusters_ids = style_clusters_data['cluster_ids']
             num_clusters = len(style_clusters_data['cluster_centers_tsne'])
