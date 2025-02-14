@@ -1299,20 +1299,23 @@ def find_index_string_containing_substring(string_list, substring):
 
 
 
+'''
 def save_styles_per_race_performance_bars_chart(perf_metrics, global_title, output_path):
     races = list(perf_metrics.keys())
-    ndarrays = [perf_metrics[race]['acc_clusters_mean'] for race in races]
+    # ndarrays = [perf_metrics[race]['acc_clusters_mean'] for race in races]
+    ndarrays_below = [perf_metrics[race]['perc_hits_diff_style_clusters_mean'] for race in races]
+    ndarrays_above = [perf_metrics[race]['perc_hits_same_style_clusters_mean'] for race in races]
     stats = [perf_metrics[race]['acc_clusters_mean_metrics'] for race in races]
 
-    if len(ndarrays) != len(races) or len(stats) != len(races):
-        raise ValueError("The number of ndarrays and stats must match the number of subtitles.")
+    if len(ndarrays_below) != len(races) or len(stats) != len(races):
+        raise ValueError("The number of ndarrays_below and stats must match the number of subtitles.")
 
     # Set the global maximum value for consistent y-axis scaling
     # global_max = 0.05  # 5%
     # global_max = 0.1   # 10%
     global_max = 1.0     # 100%
 
-    n_subplots = len(ndarrays)
+    n_subplots = len(ndarrays_below)
     fig_height = 10
     fig, axes = plt.subplots(n_subplots, 2, figsize=(16, fig_height), constrained_layout=True, 
                               gridspec_kw={"width_ratios": [3, 1]})
@@ -1321,20 +1324,25 @@ def save_styles_per_race_performance_bars_chart(perf_metrics, global_title, outp
         axes = [axes]
 
     fig.suptitle(global_title, fontsize=16, weight='bold')
-
-    for i, ((bar_ax, stat_ax), arr, stat, subtitle) in enumerate(zip(axes, ndarrays, stats, races)):
+    
+    for i, ((bar_ax, stat_ax), arr_below, arr_above, stat, subtitle) in enumerate(zip(axes, ndarrays_below, ndarrays_above, stats, races)):
         # Plot bar chart for ndarrays
-        bar_ax.bar(range(len(arr)), arr)
+        bar_ax.bar(range(len(arr_below)), arr_below, color="blue", label='acc_diff_style')
+        bar_ax.bar(range(len(arr_above)), arr_above, color="green", label='acc_same_style', bottom=arr_below)
         bar_ax.set_ylim(0, global_max)
         bar_ax.set_yticks([0, global_max])
         bar_ax.set_title(f'{subtitle} (styles)', fontsize=14)
-        if i == len(ndarrays) - 1:
+        if i == len(ndarrays_below) - 1:
             bar_ax.set_xlabel("Face Styles", fontsize=12)
         bar_ax.set_ylabel("Accuracy", fontsize=12)
+        
+        if i == 0:
+            # bar_ax.legend(loc="upper right")
+            bar_ax.legend(loc="upper center")
 
         # Set x-ticks and labels for bar_ax
-        bar_ax.set_xticks(range(len(arr)))
-        bar_ax.set_xticklabels(range(len(arr)), fontsize=8, rotation=90)
+        bar_ax.set_xticks(range(len(arr_below)))
+        bar_ax.set_xticklabels(range(len(arr_below)), fontsize=8, rotation=90)
 
         # Plot vertical bar chart for statistics
         stat_labels = list(stat.keys())
@@ -1350,6 +1358,64 @@ def save_styles_per_race_performance_bars_chart(perf_metrics, global_title, outp
                          ha='center', va='bottom', fontsize=14)
 
     plt.savefig(output_path, format='png')
+    plt.close(fig)
+'''
+def save_styles_per_race_performance_bars_chart(perf_metrics, global_title, output_path):
+    races = list(perf_metrics.keys())
+    ndarrays_below = [perf_metrics[race]['perc_hits_diff_style_clusters_mean'] for race in races]
+    ndarrays_above = [perf_metrics[race]['perc_hits_same_style_clusters_mean'] for race in races]
+    stats = [perf_metrics[race]['acc_clusters_mean_metrics'] for race in races]
+
+    if len(ndarrays_below) != len(races) or len(stats) != len(races):
+        raise ValueError("The number of ndarrays_below and stats must match the number of subtitles.")
+
+    global_max = 1.0  # 100%
+    n_subplots = len(ndarrays_below)
+
+    subplot_height = 2.5
+    subplot_spacing = 1
+    fig_height = n_subplots * subplot_height
+    
+    fig, axes = plt.subplots(n_subplots, 2, figsize=(16, fig_height), constrained_layout=False, 
+                              gridspec_kw={"width_ratios": [3, 1]})
+    fig.subplots_adjust(hspace=subplot_spacing)
+    
+    if n_subplots == 1:
+        axes = [axes]
+    
+    fig.suptitle(global_title, fontsize=16, weight='bold')
+    
+    for i, ((bar_ax, stat_ax), arr_below, arr_above, stat, subtitle) in enumerate(zip(axes, ndarrays_below, ndarrays_above, stats, races)):
+        bars_below = bar_ax.bar(range(len(arr_below)), arr_below, color="blue", label='acc_pairs_diff_style')
+        bars_above = bar_ax.bar(range(len(arr_above)), arr_above, color="green", label='acc_pairs_same_style', bottom=arr_below)
+        
+        bar_ax.set_ylim(0, global_max)
+        bar_ax.set_yticks([0, global_max])
+        bar_ax.set_title(f'{subtitle} (styles)', fontsize=14)
+        if i == len(ndarrays_below) - 1:
+            bar_ax.set_xlabel("Face Styles", fontsize=12)
+        bar_ax.set_ylabel("Accuracy", fontsize=12)
+
+        bar_ax.set_xticks(range(len(arr_below)))
+        bar_ax.set_xticklabels(range(len(arr_below)), fontsize=8, rotation=90)
+        
+        if i == 0:
+            # bar_ax.legend(loc="upper left", bbox_to_anchor=(1.05, 1))
+            bar_ax.legend(loc="upper right", bbox_to_anchor=(1.0, 1.6))
+            # bar_ax.legend(loc="best")
+
+        stat_labels = list(stat.keys())
+        stat_values = list(stat.values())
+        bars = stat_ax.bar(stat_labels, stat_values, color="orange")
+        stat_ax.set_title(f'{subtitle} (statistics)', fontsize=14)
+        stat_ax.set_ylim(0, 2)
+        stat_ax.set_ylabel("Value", fontsize=10)
+
+        for bar, value in zip(bars, stat_values):
+            stat_ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05, f'{value:.3f}', 
+                         ha='center', va='bottom', fontsize=14)
+    
+    plt.savefig(output_path, format='png', bbox_inches='tight')
     plt.close(fig)
 
 
