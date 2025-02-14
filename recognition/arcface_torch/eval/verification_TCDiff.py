@@ -384,6 +384,14 @@ def get_avg_roc_metrics_races(metrics_races=[{}], races_combs=[]):
         avg_roc_metrics[race_comb]['acc_clusters_mean'] = np.mean(np.stack(accs_clusters), axis=0)
         avg_roc_metrics[race_comb]['acc_clusters_std']  = np.std(np.stack(accs_clusters), axis=0)
 
+        perc_hits_same_style_clusters = [metrics_races[fold_idx][race_comb]['perc_hits_same_style_clusters'] for fold_idx in range(len(metrics_races))]
+        avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_mean'] = np.mean(np.stack(perc_hits_same_style_clusters), axis=0)
+        avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_std']  = np.std(np.stack(perc_hits_same_style_clusters), axis=0)
+
+        perc_hits_diff_style_clusters = [metrics_races[fold_idx][race_comb]['perc_hits_diff_style_clusters'] for fold_idx in range(len(metrics_races))]
+        avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_mean'] = np.mean(np.stack(perc_hits_diff_style_clusters), axis=0)
+        avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_std']  = np.std(np.stack(perc_hits_diff_style_clusters), axis=0)
+
         # print(f"avg_roc_metrics[{race_comb}]['acc_clusters_mean']:", avg_roc_metrics[race_comb]['acc_clusters_mean'])
         # sys.exit(0)
 
@@ -550,10 +558,15 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
                 metrics_races[race_comb]['fn_clusters']                   = np.zeros((nclusters,))
                 metrics_races[race_comb]['acc_clusters']                  = np.zeros((nclusters,))
                 metrics_races[race_comb]['num_samples_clusters']          = np.zeros((nclusters,))
-                metrics_races[race_comb]['num_pairs_same_style_clusters'] = np.zeros((nclusters,))
+                # metrics_races[race_comb]['num_pairs_same_style_clusters'] = np.zeros((nclusters,))
+                metrics_races[race_comb]['num_hits_same_style_clusters']  = np.zeros((nclusters,))
+                metrics_races[race_comb]['num_hits_diff_style_clusters']  = np.zeros((nclusters,))
+                metrics_races[race_comb]['perc_hits_same_style_clusters'] = np.zeros((nclusters,))
+                metrics_races[race_comb]['perc_hits_diff_style_clusters'] = np.zeros((nclusters,))
 
                 cluster_pairs_labels_race_sample0 = style_clusters_pairs_labels[indices_race_comb][:,0]
                 cluster_pairs_labels_race_sample1 = style_clusters_pairs_labels[indices_race_comb][:,1]
+                # same_style_cluster_pairs_labels_race = cluster_pairs_labels_race_sample0 == cluster_pairs_labels_race_sample1
 
                 indices_tp_race = np.where(logical_tp == True)[0]
                 np.add.at(metrics_races[race_comb]['tp_clusters'], cluster_pairs_labels_race_sample0[indices_tp_race], 1)
@@ -571,15 +584,34 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
                 np.add.at(metrics_races[race_comb]['fn_clusters'], cluster_pairs_labels_race_sample0[indices_fn_race], 1)
                 np.add.at(metrics_races[race_comb]['fn_clusters'], cluster_pairs_labels_race_sample1[indices_fn_race], 1)
 
-                metrics_races[race_comb]['acc_clusters'] = (metrics_races[race_comb]['tp_clusters'] +
-                                                            metrics_races[race_comb]['tn_clusters']) / (metrics_races[race_comb]['tp_clusters'] + 
-                                                                                                        metrics_races[race_comb]['fp_clusters'] +
-                                                                                                        metrics_races[race_comb]['tn_clusters'] +
-                                                                                                        metrics_races[race_comb]['fn_clusters'])
-                metrics_races[race_comb]['acc_clusters'][np.where(np.isnan(metrics_races[race_comb]['acc_clusters']))[0]] = 0
+                sum_tp_fp_tn_fn = metrics_races[race_comb]['tp_clusters'] + metrics_races[race_comb]['fp_clusters'] + metrics_races[race_comb]['tn_clusters'] + metrics_races[race_comb]['fn_clusters']
+                metrics_races[race_comb]['acc_clusters'] = np.divide(metrics_races[race_comb]['tp_clusters'] + metrics_races[race_comb]['tn_clusters'],
+                                                                     sum_tp_fp_tn_fn,
+                                                                     where=sum_tp_fp_tn_fn != 0,
+                                                                     out=np.zeros_like(metrics_races[race_comb]['tp_clusters']))
 
                 np.add.at(metrics_races[race_comb]['num_samples_clusters'], cluster_pairs_labels_race_sample0, 1)
                 np.add.at(metrics_races[race_comb]['num_samples_clusters'], cluster_pairs_labels_race_sample1, 1)
+
+                indices_hits   = np.hstack((indices_tp_race, indices_tn_race))
+                indices_misses = np.hstack((indices_fp_race, indices_fn_race))
+                for idx_index_hit, index_hit in enumerate(indices_hits):
+                    if cluster_pairs_labels_race_sample0[index_hit] == cluster_pairs_labels_race_sample1[index_hit]:
+                        metrics_races[race_comb]['num_hits_same_style_clusters'][cluster_pairs_labels_race_sample0[index_hit]] += 1
+                        metrics_races[race_comb]['num_hits_same_style_clusters'][cluster_pairs_labels_race_sample1[index_hit]] += 1
+                    else:
+                        metrics_races[race_comb]['num_hits_diff_style_clusters'][cluster_pairs_labels_race_sample0[index_hit]] += 1
+                        metrics_races[race_comb]['num_hits_diff_style_clusters'][cluster_pairs_labels_race_sample1[index_hit]] += 1
+
+                metrics_races[race_comb]['perc_hits_same_style_clusters'] = np.divide(metrics_races[race_comb]['num_hits_same_style_clusters'],
+                                                                                      metrics_races[race_comb]['num_samples_clusters'],
+                                                                                      where=metrics_races[race_comb]['num_samples_clusters'] != 0,
+                                                                                      out=np.zeros_like(metrics_races[race_comb]['num_hits_same_style_clusters']))
+
+                metrics_races[race_comb]['perc_hits_diff_style_clusters'] = np.divide(metrics_races[race_comb]['num_hits_diff_style_clusters'],
+                                                                                      metrics_races[race_comb]['num_samples_clusters'],
+                                                                                      where=metrics_races[race_comb]['num_samples_clusters'] != 0,
+                                                                                      out=np.zeros_like(metrics_races[race_comb]['num_hits_diff_style_clusters']))
 
     if races_list is None:
         return tpr, fpr, acc, predict_issame
