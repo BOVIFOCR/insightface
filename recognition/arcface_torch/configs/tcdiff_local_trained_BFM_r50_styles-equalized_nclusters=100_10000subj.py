@@ -48,7 +48,8 @@ if uname.nodename == 'duo':
 
     # λ_BFM = 0.01
     # config.rec = '/datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_NCLUSTERS=100'
-    config.rec = '/datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_BY-RACE_NCLUSTERS=100'
+    # config.rec = '/datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_BY-RACE_NCLUSTERS=100'
+    config.rec = '/datasets2/bjgbiesseck/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_BY-RACE_FROM-BUPT_NCLUSTERS=100'
 
     # λ_BFM = 0.005
     # config.rec = ''
@@ -72,7 +73,8 @@ if uname.nodename == 'duo':
 elif uname.nodename == 'diolkos':
     # λ_BFM = 0.01
     # config.rec = '/nobackup/unico/datasets/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_NCLUSTERS=100'
-    config.rec = '/nobackup/unico/datasets/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_BY-RACE_NCLUSTERS=100'
+    # config.rec = '/nobackup/unico/datasets/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_BY-RACE_NCLUSTERS=100'
+    config.rec = '/nobackup/unico/datasets/face_recognition/dcface/generated_images/tcdiff_WITH_BFM_e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1_EQUALIZED-STYLES_BY-RACE_FROM-BUPT_NCLUSTERS=100'
 
     # λ_BFM = 0.005
     # config.rec = ''
