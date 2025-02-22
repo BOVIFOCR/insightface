@@ -39,6 +39,7 @@ import torch
 from mxnet import ndarray as nd
 from scipy import interpolate
 from scipy.stats import entropy
+from scipy.stats import pearsonr
 from sklearn.decomposition import PCA
 from sklearn.model_selection import KFold
 from PIL import Image
@@ -383,18 +384,31 @@ def get_avg_roc_metrics_races(metrics_races=[{}], races_combs=[]):
         accs_clusters = [metrics_races[fold_idx][race_comb]['acc_clusters'] for fold_idx in range(len(metrics_races))]
         avg_roc_metrics[race_comb]['acc_clusters_mean'] = np.mean(np.stack(accs_clusters), axis=0)
         avg_roc_metrics[race_comb]['acc_clusters_std']  = np.std(np.stack(accs_clusters), axis=0)
-
+        
         perc_hits_same_style_clusters = [metrics_races[fold_idx][race_comb]['perc_hits_same_style_clusters'] for fold_idx in range(len(metrics_races))]
         avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_mean'] = np.mean(np.stack(perc_hits_same_style_clusters), axis=0)
         avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_std']  = np.std(np.stack(perc_hits_same_style_clusters), axis=0)
-
+        
         perc_hits_diff_style_clusters = [metrics_races[fold_idx][race_comb]['perc_hits_diff_style_clusters'] for fold_idx in range(len(metrics_races))]
         avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_mean'] = np.mean(np.stack(perc_hits_diff_style_clusters), axis=0)
         avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_std']  = np.std(np.stack(perc_hits_diff_style_clusters), axis=0)
-
+        
         # print(f"avg_roc_metrics[{race_comb}]['acc_clusters_mean']:", avg_roc_metrics[race_comb]['acc_clusters_mean'])
         # sys.exit(0)
 
+    avg_roc_metrics['total_races'] = {}
+    avg_roc_metrics['total_races']['acc_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
+    avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
+    avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
+    for i, race_comb in enumerate(races_combs):
+        avg_roc_metrics['total_races']['acc_clusters_mean'] += avg_roc_metrics[race_comb]['acc_clusters_mean']
+        avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] += avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_mean']
+        avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] += avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_mean']
+
+    avg_roc_metrics['total_races']['acc_clusters_mean'] /= len(races_combs)
+    avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] /= len(races_combs)
+    avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] /= len(races_combs)
+    
     return avg_roc_metrics
 
 
@@ -1454,6 +1468,60 @@ def compute_statistical_metrics(performance_values):
     return stats
 
 
+def compute_total_counts(races_styles_clusters_count={}):
+    first_race = list(races_styles_clusters_count.keys())[0]
+    races_styles_clusters_count_total_races = np.zeros((len(races_styles_clusters_count[first_race]),))
+    for idx_race, race in enumerate(list(races_styles_clusters_count.keys())):
+        races_styles_clusters_count_total_races += races_styles_clusters_count[race]
+    return races_styles_clusters_count_total_races
+    # races_styles_clusters_count['total_races'] = races_styles_clusters_count_total_races
+    # print('races_styles_clusters_count_total_races.sum():', races_styles_clusters_count_total_races.sum())
+
+
+def normalize_races_styles_clusters_count(races_styles_clusters_count={}):
+    races_styles_clusters_count_normalized = {}
+    for idx_race, race in enumerate(list(races_styles_clusters_count.keys())):
+        if races_styles_clusters_count[race].sum() > 0.0:
+            races_styles_clusters_count_normalized[race] = races_styles_clusters_count[race] / races_styles_clusters_count[race].sum()
+        else:
+            races_styles_clusters_count_normalized[race] = np.zeros_like(races_styles_clusters_count[race])
+    return races_styles_clusters_count_normalized
+
+# BUPT:  ('Asian', 'Asian'), ('Indian', 'Indian'), ('African', 'African'), ('Caucasian', 'Caucasian')
+# other: 'asian', 'indian', 'black', 'white', 'middle eastern', 'latino hispanic', 'total_races'
+equiv_races = {'asian':('Asian', 'Asian'), 'indian':('Indian', 'Indian'), 'black':('African', 'African'), 'white':('Caucasian', 'Caucasian'), 'total_races':'total_races'}
+def evaluate_performance_by_race_face_style(train_races_styles_clusters_count_norm, test_races_styles_clusters_count_norm, avg_roc_metrics):
+    first_race = list(train_races_styles_clusters_count_norm.keys())[0]
+    expected_prob_uniform_dist = 1.0 / len(train_races_styles_clusters_count_norm[first_race])
+
+    test_performance_by_race_face_style = {}
+    for idx_race, race in enumerate(list(test_races_styles_clusters_count_norm.keys())):
+        train_race_count_norm = train_races_styles_clusters_count_norm[race]
+        test_race_count_norm  = test_races_styles_clusters_count_norm[race]
+
+        if race in list(equiv_races.keys()):
+            equiv_race = equiv_races[race]
+
+            train_race_count_norm_perc = train_race_count_norm / expected_prob_uniform_dist
+            train_race_count_norm_perc_clip = np.clip(train_race_count_norm_perc, 0.0, 1.0)
+            if race == 'total_races':
+                print('train_race_count_norm:', train_race_count_norm)
+                print('train_race_count_norm_perc:', train_race_count_norm_perc)
+                print('train_race_count_norm_perc_clip:', train_race_count_norm_perc_clip)
+            
+            test_race_performance = np.zeros_like(test_race_count_norm)
+
+            acc_clusters_mean = avg_roc_metrics[equiv_race]['acc_clusters_mean']
+            # correlation, _ = pearsonr(train_race_count_norm, acc_clusters_mean)
+            correlation, _ = pearsonr(train_race_count_norm_perc_clip, acc_clusters_mean)
+            print(f'{race} - correlation: {correlation}')
+
+            # 
+            # for idx_cluster in range(len(test_race_performance)):
+            #     test_race_performance = train_race_count_norm[idx_cluster] / expected_prob_uniform_dist
+
+
+
 
 if __name__ == '__main__':
 
@@ -1489,7 +1557,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--save-best-worst-pairs', default=0, type=int)
 
-    parser.add_argument('--style-clusters-data', default='', type=str)   # /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
+    parser.add_argument('--test-style-clusters-data', default='', type=str)    # /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
+    parser.add_argument('--train-style-clusters-data', default='', type=str)   # /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
 
     args = parser.parse_args()
 
@@ -1555,35 +1624,35 @@ if __name__ == '__main__':
             else:
                 raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
 
-        style_clusters_data = None
-        if args.style_clusters_data:
+        test_style_clusters_data = None
+        if args.test_style_clusters_data:
             assert len(data_set) > 4, f"len(data_set) == {len(data_set)}, it doesn't have the paths of protocol images. Delete or rename the file '{path_unified_dataset}' and re-run this code."
             samples_orig_paths_list = data_set[4]
 
-            print(f'Loading subj-clusters: \'{args.style_clusters_data}\'')
-            style_clusters_data = load_dict(args.style_clusters_data)
-            print('Loaded style_clusters_data.keys():', style_clusters_data.keys())
+            print(f'Loading test-subj-clusters: \'{args.test_style_clusters_data}\'')
+            test_style_clusters_data = load_dict(args.test_style_clusters_data)
+            print('Loaded test_style_clusters_data.keys():', test_style_clusters_data.keys())
 
             # dict_keys(['files_paths', 'original_feats', 'cluster_ids', 'feats_tsne', 'cluster_centers_tsne', 'facial_attribs_paths', 'facial_attribs', 'dominant_races', 'races_styles_clusters_count', 'corresp_imgs_paths'])
-            # print("style_clusters_data['corresp_imgs_paths']:", style_clusters_data['corresp_imgs_paths'])
-            # print("len(style_clusters_data['corresp_imgs_paths']):", len(style_clusters_data['corresp_imgs_paths']))
-            # print("style_clusters_data['corresp_imgs_paths'][0]:", style_clusters_data['corresp_imgs_paths'][0])
+            # print("test_style_clusters_data['corresp_imgs_paths']:", test_style_clusters_data['corresp_imgs_paths'])
+            # print("len(test_style_clusters_data['corresp_imgs_paths']):", len(test_style_clusters_data['corresp_imgs_paths']))
+            # print("test_style_clusters_data['corresp_imgs_paths'][0]:", test_style_clusters_data['corresp_imgs_paths'][0])
 
-            style_clusters_pairs_labels = []
-            style_clusters_data_corresp_imgs_paths = style_clusters_data['corresp_imgs_paths']
-            style_clusters_ids = style_clusters_data['cluster_ids']
-            num_clusters = len(style_clusters_data['cluster_centers_tsne'])
+            test_style_clusters_pairs_labels = []
+            test_style_clusters_data_corresp_imgs_paths = test_style_clusters_data['corresp_imgs_paths']
+            style_clusters_ids = test_style_clusters_data['cluster_ids']
+            num_clusters = len(test_style_clusters_data['cluster_centers_tsne'])
             for idx_pair_orig_paths, pair_orig_paths in enumerate(samples_orig_paths_list):
                 print(f"Loading samples clusters labels {idx_pair_orig_paths}/{len(samples_orig_paths_list)}", end='\r')
                 # print('pair_orig_paths:', pair_orig_paths)
                 sample0, _ = os.path.splitext(pair_orig_paths[0])
                 sample1, _ = os.path.splitext(pair_orig_paths[1])
 
-                sample0_idx_cluster_list = find_index_string_containing_substring(style_clusters_data_corresp_imgs_paths, sample0)
+                sample0_idx_cluster_list = find_index_string_containing_substring(test_style_clusters_data_corresp_imgs_paths, sample0)
                 assert sample0_idx_cluster_list > -1, f"Error, substring of sample0 not found: '{sample0}'"
                 # print('sample0_idx_cluster_list:', sample0_idx_cluster_list)
-                # print(f"style_clusters_data_corresp_imgs_paths[{sample0_idx_cluster_list}]:", style_clusters_data_corresp_imgs_paths[sample0_idx_cluster_list])
-                sample1_idx_cluster_list = find_index_string_containing_substring(style_clusters_data_corresp_imgs_paths, sample1)
+                # print(f"test_style_clusters_data_corresp_imgs_paths[{sample0_idx_cluster_list}]:", test_style_clusters_data_corresp_imgs_paths[sample0_idx_cluster_list])
+                sample1_idx_cluster_list = find_index_string_containing_substring(test_style_clusters_data_corresp_imgs_paths, sample1)
                 assert sample1_idx_cluster_list > -1, f"Error, substring of sample1 not found: '{sample1}'"
                 
                 sample0_cluster_label = int(style_clusters_ids[sample0_idx_cluster_list])
@@ -1592,11 +1661,11 @@ if __name__ == '__main__':
                 assert sample1_cluster_label < num_clusters, f"Error, cluster label of sample1 ({sample1_cluster_label}) > num_clusters ({num_clusters})"
                 style_clusters_pair_labels = (sample0_cluster_label, sample1_cluster_label)
                 # print('style_clusters_pair_labels:', style_clusters_pair_labels)
-                style_clusters_pairs_labels.append(style_clusters_pair_labels)
+                test_style_clusters_pairs_labels.append(style_clusters_pair_labels)
             print()
-            assert len(style_clusters_pairs_labels) == len(samples_orig_paths_list)
-            # style_clusters_data['pairs_cluster_ids'] = style_clusters_pairs_labels
-            style_clusters_data['pairs_cluster_ids'] = np.array(style_clusters_pairs_labels)
+            assert len(test_style_clusters_pairs_labels) == len(samples_orig_paths_list)
+            # test_style_clusters_data['pairs_cluster_ids'] = test_style_clusters_pairs_labels
+            test_style_clusters_data['pairs_cluster_ids'] = np.array(test_style_clusters_pairs_labels)
     # sys.exit(0)
 
     if args.mode == 0:
@@ -1610,7 +1679,7 @@ if __name__ == '__main__':
                     races_combs = None
 
                 acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, ver_list[i], model, args.batch_size, args.nfolds, races_combs, style_clusters_data)
+                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
                 results.append(acc2)
                 print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
                 # print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
@@ -1632,7 +1701,7 @@ if __name__ == '__main__':
                     print('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
 
 
-                if not style_clusters_data is None:
+                if not test_style_clusters_data is None:
                     print('Computing distributions statiscs...')
                     for idx_race, race in enumerate(list(avg_roc_metrics.keys())):
                         avg_roc_metrics[race]['acc_clusters_mean_metrics'] = compute_statistical_metrics(avg_roc_metrics[race]['acc_clusters_mean'])
@@ -1640,9 +1709,40 @@ if __name__ == '__main__':
 
                     global_title = f"Face Verification by Race and Face Style Cluster - Dataset={args.target}"
                     output_dir = os.path.dirname(args.model)
-                    output_path = os.path.join(output_dir, f"accuracies_by_race_and_face_style_cluster_dataset={args.target}_nclusters={len(style_clusters_data['cluster_centers_tsne'])}.png")
+                    output_path = os.path.join(output_dir, f"accuracies_by_race_and_face_style_cluster_dataset={args.target}_nclusters={len(test_style_clusters_data['cluster_centers_tsne'])}.png")
                     print(f"Saving accuracies chart: '{output_path}'")
                     save_styles_per_race_performance_bars_chart(avg_roc_metrics, global_title, output_path)
+
+                    
+                    train_style_clusters_data = None
+                    if args.train_style_clusters_data:
+                        # assert len(data_set) > 4, f"len(data_set) == {len(data_set)}, it doesn't have the paths of protocol images. Delete or rename the file '{path_unified_dataset}' and re-run this code."
+                        # samples_orig_paths_list = data_set[4]
+
+                        print(f'Loading train-subj-clusters: \'{args.train_style_clusters_data}\'')
+                        train_style_clusters_data = load_dict(args.train_style_clusters_data)
+                        print('Loaded train_style_clusters_data.keys():', train_style_clusters_data.keys())
+
+                        train_races_styles_clusters_count = train_style_clusters_data['races_styles_clusters_count']
+                        # print('train_races_styles_clusters_count:', train_races_styles_clusters_count)
+                        if not 'total_races' in list(train_races_styles_clusters_count.keys()):
+                            print(f'\nCounting train total face styles...')
+                            train_races_styles_clusters_count['total_races'] = compute_total_counts(train_races_styles_clusters_count)
+                        print(f'Normalizing train total face styles...')
+                        train_races_styles_clusters_count_norm = normalize_races_styles_clusters_count(train_races_styles_clusters_count)
+
+                        test_races_styles_clusters_count = test_style_clusters_data['races_styles_clusters_count']
+                        # print('test_races_styles_clusters_count:', test_races_styles_clusters_count)
+                        if not 'total_races' in list(test_races_styles_clusters_count.keys()):
+                            print(f'\nCounting test total face styles...')
+                            test_races_styles_clusters_count['total_races'] = compute_total_counts(test_races_styles_clusters_count)
+                        print(f'Normalizing test total face styles...')
+                        test_races_styles_clusters_count_norm = normalize_races_styles_clusters_count(test_races_styles_clusters_count)
+
+                        test_performance_by_race_face_style = evaluate_performance_by_race_face_style(train_races_styles_clusters_count_norm,
+                                                                                                      test_races_styles_clusters_count_norm,
+                                                                                                      avg_roc_metrics)
+
 
 
             # print('Max of [%s] is %1.5f' % (ver_name_list[i], np.max(results)))
