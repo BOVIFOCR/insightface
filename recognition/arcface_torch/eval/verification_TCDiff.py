@@ -39,7 +39,7 @@ import torch
 from mxnet import ndarray as nd
 from scipy import interpolate
 from scipy.stats import entropy
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 from sklearn.decomposition import PCA
 from sklearn.model_selection import KFold
 from PIL import Image
@@ -1487,38 +1487,127 @@ def normalize_races_styles_clusters_count(races_styles_clusters_count={}):
             races_styles_clusters_count_normalized[race] = np.zeros_like(races_styles_clusters_count[race])
     return races_styles_clusters_count_normalized
 
+
+'''
+import matplotlib.pyplot as plt
+import numpy as np
+
+def save_correlations_per_race_scatter_chart(races, train_styles_counts, test_styles_perfs, global_title, output_path):
+    """
+    Generates a figure with multiple scatter subplots stacked vertically,
+    showing the correlation between train_styles_counts and test_styles_perfs
+    for each race.
+
+    Args:
+        races (list of str): List of race names.
+        train_styles_counts (list of ndarray): List of 1D numpy arrays representing train style counts.
+        test_styles_perfs (list of ndarray): List of 1D numpy arrays representing test style performances.
+        global_title (str): Title for the entire figure.
+        output_path (str): Path to save the figure.
+    """
+
+    num_races = len(races)
+    fig, axes = plt.subplots(num_races, 1, figsize=(8, 4 * num_races))  # Adjust figsize as needed
+    fig.suptitle(global_title)
+
+    for i, race in enumerate(races):
+        ax = axes[i] if num_races > 1 else axes # handle case where there is only one race.
+        ax.scatter(train_styles_counts[i], test_styles_perfs[i])
+        ax.set_title(f"Correlation for {race}")
+        ax.set_xlabel("Train Style Counts")
+        ax.set_ylabel("Test Style Performances")
+        ax.grid(True)
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to prevent overlapping titles
+    plt.savefig(output_path)
+    plt.close(fig) # Close the figure to free memory.
+'''
+
+def save_correlations_per_race_scatter_chart(train_race_count_norm_percs, avg_roc_metrics, global_title, output_path):
+    races = list(train_race_count_norm_percs.keys())
+    num_races = len(races)
+    train_styles_counts = [train_race_count_norm_percs[race] for race in races]
+    test_styles_perfs = [avg_roc_metrics[equiv_races[race]]['acc_clusters_mean'] for race in races]
+    stats = [avg_roc_metrics[equiv_races[race]]['acc_clusters_mean_corrs'] for race in races]
+
+    fig, axes = plt.subplots(num_races, 2, figsize=(9, 3*num_races), gridspec_kw={'width_ratios': [3, 1]})
+    fig.suptitle(global_title)
+
+    # Find global min/max for consistent axis limits
+    global_min_x = min(min(arr) for arr in train_styles_counts)
+    global_max_x = max(max(arr) for arr in train_styles_counts)
+    global_min_y = min(min(arr) for arr in test_styles_perfs)
+    global_max_y = max(max(arr) for arr in test_styles_perfs)
+
+    for i, race in enumerate(races):
+        ax_scatter = axes[i, 0] if num_races > 1 else axes[0]
+        ax_text    = axes[i, 1] if num_races > 1 else axes[1]
+
+        ax_scatter.scatter(train_styles_counts[i], test_styles_perfs[i])
+        ax_scatter.set_title(f"{race}")
+        ax_scatter.set_xlabel("Train Style Proportion (wrt Uniform Expected Value)")
+        ax_scatter.set_ylabel("Test Style Performances")
+        ax_scatter.grid(True)
+
+        # Set consistent axis limits
+        ax_scatter.set_xlim(global_min_x, global_max_x)
+        ax_scatter.set_ylim(global_min_y, global_max_y)
+        # ax_scatter.set_aspect('equal', adjustable='box')
+        
+        stat_text = "\n".join([f"{key}: {value:.4f}" for key, value in stats[i].items()])
+        ax_text.set_title(f"Correlations - {race}")
+        ax_text.text(0.1, 1.0, stat_text, verticalalignment='top', fontsize=12)
+        ax_text.axis('off')
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.savefig(output_path)
+    plt.close(fig)
+
+
 # BUPT:  ('Asian', 'Asian'), ('Indian', 'Indian'), ('African', 'African'), ('Caucasian', 'Caucasian')
 # other: 'asian', 'indian', 'black', 'white', 'middle eastern', 'latino hispanic', 'total_races'
 equiv_races = {'asian':('Asian', 'Asian'), 'indian':('Indian', 'Indian'), 'black':('African', 'African'), 'white':('Caucasian', 'Caucasian'), 'total_races':'total_races'}
-def evaluate_performance_by_race_face_style(train_races_styles_clusters_count_norm, test_races_styles_clusters_count_norm, avg_roc_metrics):
+def evaluate_performance_by_race_face_style(train_races_styles_clusters_count_norm, test_races_styles_clusters_count_norm, avg_roc_metrics, args):
     first_race = list(train_races_styles_clusters_count_norm.keys())[0]
     expected_prob_uniform_dist = 1.0 / len(train_races_styles_clusters_count_norm[first_race])
+    train_race_count_norm_percs = {}
 
-    test_performance_by_race_face_style = {}
     for idx_race, race in enumerate(list(test_races_styles_clusters_count_norm.keys())):
         train_race_count_norm = train_races_styles_clusters_count_norm[race]
         test_race_count_norm  = test_races_styles_clusters_count_norm[race]
+        acc_clusters_mean_corrs = {}
 
         if race in list(equiv_races.keys()):
             equiv_race = equiv_races[race]
 
             train_race_count_norm_perc = train_race_count_norm / expected_prob_uniform_dist
             train_race_count_norm_perc_clip = np.clip(train_race_count_norm_perc, 0.0, 1.0)
-            if race == 'total_races':
-                print('train_race_count_norm:', train_race_count_norm)
-                print('train_race_count_norm_perc:', train_race_count_norm_perc)
-                print('train_race_count_norm_perc_clip:', train_race_count_norm_perc_clip)
-            
-            test_race_performance = np.zeros_like(test_race_count_norm)
+            train_race_count_norm_percs[race] = train_race_count_norm_perc
+            # train_race_count_norm_percs[race] = train_race_count_norm_perc_clip
 
             acc_clusters_mean = avg_roc_metrics[equiv_race]['acc_clusters_mean']
-            # correlation, _ = pearsonr(train_race_count_norm, acc_clusters_mean)
-            correlation, _ = pearsonr(train_race_count_norm_perc_clip, acc_clusters_mean)
-            print(f'{race} - correlation: {correlation}')
 
-            # 
+            correlation_pearson, pvalue_pearson   = pearsonr(train_race_count_norm_percs[race], acc_clusters_mean)
+            correlation_spearman, pvalue_spearman = spearmanr(train_race_count_norm_percs[race], acc_clusters_mean)
+
+            acc_clusters_mean_corrs['corr_pearson']    = correlation_pearson
+            acc_clusters_mean_corrs['pvalue_pearson']  = pvalue_pearson
+            acc_clusters_mean_corrs['corr_spearman']   = correlation_spearman
+            acc_clusters_mean_corrs['pvalue_spearman'] = pvalue_spearman
+
+            print(f'{race} - correlation_pearson: {correlation_pearson}    pvalue_pearson: {pvalue_pearson}    |    correlation_spearman: {correlation_spearman}    pvalue_spearman: {pvalue_spearman}')
+
+            # test_race_performance = np.zeros_like(test_race_count_norm)
             # for idx_cluster in range(len(test_race_performance)):
             #     test_race_performance = train_race_count_norm[idx_cluster] / expected_prob_uniform_dist
+
+            avg_roc_metrics[equiv_race]['acc_clusters_mean_corrs'] = acc_clusters_mean_corrs
+
+    global_title = f"Correlations Between Face Styles Count and Style Performances - Dataset={args.target}"
+    output_dir = os.path.dirname(args.model)
+    output_path = os.path.join(output_dir, f"correlations_face_styles_count_and_performances_by_race_dataset={args.target}_nclusters={len(next(iter(test_races_styles_clusters_count_norm.values())))}.png")
+    print(f"Saving correlations chart: '{output_path}'")
+    save_correlations_per_race_scatter_chart(train_race_count_norm_percs, avg_roc_metrics, global_title, output_path)
 
 
 
@@ -1741,7 +1830,8 @@ if __name__ == '__main__':
 
                         test_performance_by_race_face_style = evaluate_performance_by_race_face_style(train_races_styles_clusters_count_norm,
                                                                                                       test_races_styles_clusters_count_norm,
-                                                                                                      avg_roc_metrics)
+                                                                                                      avg_roc_metrics,
+                                                                                                      args)
 
 
 
