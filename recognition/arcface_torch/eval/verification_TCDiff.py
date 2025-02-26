@@ -1312,68 +1312,6 @@ def find_index_string_containing_substring(string_list, substring):
     return -1  # Substring not found in any string
 
 
-
-'''
-def save_styles_per_race_performance_bars_chart(perf_metrics, global_title, output_path):
-    races = list(perf_metrics.keys())
-    # ndarrays = [perf_metrics[race]['acc_clusters_mean'] for race in races]
-    ndarrays_below = [perf_metrics[race]['perc_hits_diff_style_clusters_mean'] for race in races]
-    ndarrays_above = [perf_metrics[race]['perc_hits_same_style_clusters_mean'] for race in races]
-    stats = [perf_metrics[race]['acc_clusters_mean_metrics'] for race in races]
-
-    if len(ndarrays_below) != len(races) or len(stats) != len(races):
-        raise ValueError("The number of ndarrays_below and stats must match the number of subtitles.")
-
-    # Set the global maximum value for consistent y-axis scaling
-    # global_max = 0.05  # 5%
-    # global_max = 0.1   # 10%
-    global_max = 1.0     # 100%
-
-    n_subplots = len(ndarrays_below)
-    fig_height = 10
-    fig, axes = plt.subplots(n_subplots, 2, figsize=(16, fig_height), constrained_layout=True, 
-                              gridspec_kw={"width_ratios": [3, 1]})
-
-    if n_subplots == 1:
-        axes = [axes]
-
-    fig.suptitle(global_title, fontsize=16, weight='bold')
-    
-    for i, ((bar_ax, stat_ax), arr_below, arr_above, stat, subtitle) in enumerate(zip(axes, ndarrays_below, ndarrays_above, stats, races)):
-        # Plot bar chart for ndarrays
-        bar_ax.bar(range(len(arr_below)), arr_below, color="blue", label='acc_diff_style')
-        bar_ax.bar(range(len(arr_above)), arr_above, color="green", label='acc_same_style', bottom=arr_below)
-        bar_ax.set_ylim(0, global_max)
-        bar_ax.set_yticks([0, global_max])
-        bar_ax.set_title(f'{subtitle} (styles)', fontsize=14)
-        if i == len(ndarrays_below) - 1:
-            bar_ax.set_xlabel("Face Styles", fontsize=12)
-        bar_ax.set_ylabel("Accuracy", fontsize=12)
-        
-        if i == 0:
-            # bar_ax.legend(loc="upper right")
-            bar_ax.legend(loc="upper center")
-
-        # Set x-ticks and labels for bar_ax
-        bar_ax.set_xticks(range(len(arr_below)))
-        bar_ax.set_xticklabels(range(len(arr_below)), fontsize=8, rotation=90)
-
-        # Plot vertical bar chart for statistics
-        stat_labels = list(stat.keys())
-        stat_values = list(stat.values())
-        bars = stat_ax.bar(stat_labels, stat_values, color="orange")
-        stat_ax.set_title(f'{subtitle} (statistics)', fontsize=14)
-        stat_ax.set_ylim(0, 2)
-        stat_ax.set_ylabel("Value", fontsize=10)
-
-        # Add value annotations to the bars
-        for bar, value in zip(bars, stat_values):
-            stat_ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05, f'{value:.3f}', 
-                         ha='center', va='bottom', fontsize=14)
-
-    plt.savefig(output_path, format='png')
-    plt.close(fig)
-'''
 def save_styles_per_race_performance_bars_chart(perf_metrics, global_title, output_path):
     races = list(perf_metrics.keys())
     ndarrays_below = [perf_metrics[race]['perc_hits_diff_style_clusters_mean'] for race in races]
@@ -1487,41 +1425,6 @@ def normalize_races_styles_clusters_count(races_styles_clusters_count={}):
             races_styles_clusters_count_normalized[race] = np.zeros_like(races_styles_clusters_count[race])
     return races_styles_clusters_count_normalized
 
-
-'''
-import matplotlib.pyplot as plt
-import numpy as np
-
-def save_correlations_per_race_scatter_chart(races, train_styles_counts, test_styles_perfs, global_title, output_path):
-    """
-    Generates a figure with multiple scatter subplots stacked vertically,
-    showing the correlation between train_styles_counts and test_styles_perfs
-    for each race.
-
-    Args:
-        races (list of str): List of race names.
-        train_styles_counts (list of ndarray): List of 1D numpy arrays representing train style counts.
-        test_styles_perfs (list of ndarray): List of 1D numpy arrays representing test style performances.
-        global_title (str): Title for the entire figure.
-        output_path (str): Path to save the figure.
-    """
-
-    num_races = len(races)
-    fig, axes = plt.subplots(num_races, 1, figsize=(8, 4 * num_races))  # Adjust figsize as needed
-    fig.suptitle(global_title)
-
-    for i, race in enumerate(races):
-        ax = axes[i] if num_races > 1 else axes # handle case where there is only one race.
-        ax.scatter(train_styles_counts[i], test_styles_perfs[i])
-        ax.set_title(f"Correlation for {race}")
-        ax.set_xlabel("Train Style Counts")
-        ax.set_ylabel("Test Style Performances")
-        ax.grid(True)
-
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to prevent overlapping titles
-    plt.savefig(output_path)
-    plt.close(fig) # Close the figure to free memory.
-'''
 
 def save_correlations_per_race_scatter_chart(train_race_count_norm_percs, avg_roc_metrics, global_title, output_path):
     races = list(train_race_count_norm_percs.keys())
