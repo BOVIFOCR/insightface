@@ -38,8 +38,7 @@ import sklearn
 import torch
 from mxnet import ndarray as nd
 from scipy import interpolate
-from scipy.stats import entropy
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import entropy, pearsonr, spearmanr, kendalltau
 from sklearn.decomposition import PCA
 from sklearn.model_selection import KFold
 from PIL import Image
@@ -1433,7 +1432,7 @@ def save_correlations_per_race_scatter_chart(train_race_count_norm_percs, avg_ro
     test_styles_perfs = [avg_roc_metrics[equiv_races[race]]['acc_clusters_mean'] for race in races]
     stats = [avg_roc_metrics[equiv_races[race]]['acc_clusters_mean_corrs'] for race in races]
 
-    fig, axes = plt.subplots(num_races, 2, figsize=(9, 3*num_races), gridspec_kw={'width_ratios': [3, 1]})
+    fig, axes = plt.subplots(num_races, 2, figsize=(9, 2*num_races), gridspec_kw={'width_ratios': [3, 1]})
     fig.suptitle(global_title)
 
     # Find global min/max for consistent axis limits
@@ -1448,17 +1447,26 @@ def save_correlations_per_race_scatter_chart(train_race_count_norm_percs, avg_ro
 
         ax_scatter.scatter(train_styles_counts[i], test_styles_perfs[i])
         ax_scatter.set_title(f"{race}")
-        ax_scatter.set_xlabel("Train Style Proportion (wrt Uniform Expected Value)")
-        ax_scatter.set_ylabel("Test Style Performances")
+        ax_scatter.set_xlabel("Train Style Proportion (wrt Uniform Expected Value)", fontsize=9)
+        ax_scatter.set_ylabel("Test Style Performances", fontsize=9)
         ax_scatter.grid(True)
-
-        # Set consistent axis limits
         ax_scatter.set_xlim(global_min_x, global_max_x)
         ax_scatter.set_ylim(global_min_y, global_max_y)
-        # ax_scatter.set_aspect('equal', adjustable='box')
+        ax_scatter.set_yticks(np.arange(0, 1.1, 0.25))
         
-        stat_text = "\n".join([f"{key}: {value:.4f}" for key, value in stats[i].items()])
-        ax_text.set_title(f"Correlations - {race}")
+        plt.rcParams["font.family"] = "monospace"
+        plt.rcParams["font.monospace"] = ["FreeMono"]
+        max_len_key = max([len(key) for key in list(stats[i].keys())])
+        stat_text = ''
+        for idx_key1, (key1, val1) in enumerate(stats[i].items()):
+            if idx_key1 == 0: stat_text += 'TYPE'.ljust(max_len_key+2) + 'CORR'.ljust(7) + 'P-VAL' + '\n'
+            stat_text += f'{key1.ljust(max_len_key+1)}'
+            for key2, val2 in val1.items():
+                rfill = 6 if len(key2) < 0 else 7
+                stat_text += ('%.4f' % (val2)).rjust(rfill)
+            stat_text += '\n'
+
+        ax_text.set_title(f"{race} - Correlations")
         ax_text.text(0.1, 1.0, stat_text, verticalalignment='top', fontsize=12)
         ax_text.axis('off')
 
@@ -1492,13 +1500,18 @@ def evaluate_performance_by_race_face_style(train_races_styles_clusters_count_no
 
             correlation_pearson, pvalue_pearson   = pearsonr(train_race_count_norm_percs[race], acc_clusters_mean)
             correlation_spearman, pvalue_spearman = spearmanr(train_race_count_norm_percs[race], acc_clusters_mean)
+            correlation_kendall, pvalue_kendall   = kendalltau(train_race_count_norm_percs[race], acc_clusters_mean)
 
-            acc_clusters_mean_corrs['corr_pearson']    = correlation_pearson
-            acc_clusters_mean_corrs['pvalue_pearson']  = pvalue_pearson
-            acc_clusters_mean_corrs['corr_spearman']   = correlation_spearman
-            acc_clusters_mean_corrs['pvalue_spearman'] = pvalue_spearman
-
-            print(f'{race} - correlation_pearson: {correlation_pearson}    pvalue_pearson: {pvalue_pearson}    |    correlation_spearman: {correlation_spearman}    pvalue_spearman: {pvalue_spearman}')
+            acc_clusters_mean_corrs['pearson']  = {'corr':correlation_pearson,  'pval':pvalue_pearson}
+            acc_clusters_mean_corrs['spearman'] = {'corr':correlation_spearman, 'pval':pvalue_spearman}
+            acc_clusters_mean_corrs['kendall']  = {'corr':correlation_kendall,  'pval':pvalue_kendall}
+            
+            msg_str = f'{race}'
+            for key1, val1 in acc_clusters_mean_corrs.items():
+                msg_str += f' - {key1}'
+                for key2, val2 in val1.items():
+                    msg_str += f' {key2}: {val2}'
+            print(msg_str)
 
             # test_race_performance = np.zeros_like(test_race_count_norm)
             # for idx_cluster in range(len(test_race_performance)):
