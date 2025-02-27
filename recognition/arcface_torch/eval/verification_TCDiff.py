@@ -1519,7 +1519,7 @@ def evaluate_performance_by_race_face_style(train_races_styles_clusters_count_no
 
             avg_roc_metrics[equiv_race]['acc_clusters_mean_corrs'] = acc_clusters_mean_corrs
 
-    global_title = f"Correlations Between Face Styles Count and Style Performances - Dataset={args.target}"
+    global_title = f"Correlations Between Face Styles Count and Style Performances\nDataset={args.target} - nclusters={len(next(iter(test_races_styles_clusters_count_norm.values())))}"
     output_dir = os.path.dirname(args.model)
     output_path = os.path.join(output_dir, f"correlations_face_styles_count_and_performances_by_race_dataset={args.target}_nclusters={len(next(iter(test_races_styles_clusters_count_norm.values())))}.png")
     print(f"Saving correlations chart: '{output_path}'")
