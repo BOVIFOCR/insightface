@@ -381,33 +381,35 @@ def get_avg_roc_metrics_races(metrics_races=[{}], races_combs=[]):
         avg_roc_metrics[race_comb]['fpr_mean'] = np.mean(fprs)
         avg_roc_metrics[race_comb]['fpr_std']  = np.std(fprs)
 
-        accs_clusters = [metrics_races[fold_idx][race_comb]['acc_clusters'] for fold_idx in range(len(metrics_races))]
-        avg_roc_metrics[race_comb]['acc_clusters_mean'] = np.mean(np.stack(accs_clusters), axis=0)
-        avg_roc_metrics[race_comb]['acc_clusters_std']  = np.std(np.stack(accs_clusters), axis=0)
-        
-        perc_hits_same_style_clusters = [metrics_races[fold_idx][race_comb]['perc_hits_same_style_clusters'] for fold_idx in range(len(metrics_races))]
-        avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_mean'] = np.mean(np.stack(perc_hits_same_style_clusters), axis=0)
-        avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_std']  = np.std(np.stack(perc_hits_same_style_clusters), axis=0)
-        
-        perc_hits_diff_style_clusters = [metrics_races[fold_idx][race_comb]['perc_hits_diff_style_clusters'] for fold_idx in range(len(metrics_races))]
-        avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_mean'] = np.mean(np.stack(perc_hits_diff_style_clusters), axis=0)
-        avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_std']  = np.std(np.stack(perc_hits_diff_style_clusters), axis=0)
+        if 'acc_clusters' in metrics_races[0][races_combs[0]].keys():
+            accs_clusters = [metrics_races[fold_idx][race_comb]['acc_clusters'] for fold_idx in range(len(metrics_races))]
+            avg_roc_metrics[race_comb]['acc_clusters_mean'] = np.mean(np.stack(accs_clusters), axis=0)
+            avg_roc_metrics[race_comb]['acc_clusters_std']  = np.std(np.stack(accs_clusters), axis=0)
+            
+            perc_hits_same_style_clusters = [metrics_races[fold_idx][race_comb]['perc_hits_same_style_clusters'] for fold_idx in range(len(metrics_races))]
+            avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_mean'] = np.mean(np.stack(perc_hits_same_style_clusters), axis=0)
+            avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_std']  = np.std(np.stack(perc_hits_same_style_clusters), axis=0)
+            
+            perc_hits_diff_style_clusters = [metrics_races[fold_idx][race_comb]['perc_hits_diff_style_clusters'] for fold_idx in range(len(metrics_races))]
+            avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_mean'] = np.mean(np.stack(perc_hits_diff_style_clusters), axis=0)
+            avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_std']  = np.std(np.stack(perc_hits_diff_style_clusters), axis=0)
         
         # print(f"avg_roc_metrics[{race_comb}]['acc_clusters_mean']:", avg_roc_metrics[race_comb]['acc_clusters_mean'])
         # sys.exit(0)
 
-    avg_roc_metrics['total_races'] = {}
-    avg_roc_metrics['total_races']['acc_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
-    avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
-    avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
-    for i, race_comb in enumerate(races_combs):
-        avg_roc_metrics['total_races']['acc_clusters_mean'] += avg_roc_metrics[race_comb]['acc_clusters_mean']
-        avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] += avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_mean']
-        avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] += avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_mean']
+    if 'acc_clusters' in metrics_races[0][races_combs[0]].keys():
+        avg_roc_metrics['total_races'] = {}
+        avg_roc_metrics['total_races']['acc_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
+        avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
+        avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] = np.zeros_like(metrics_races[0][races_combs[0]]['acc_clusters'])
+        for i, race_comb in enumerate(races_combs):
+            avg_roc_metrics['total_races']['acc_clusters_mean'] += avg_roc_metrics[race_comb]['acc_clusters_mean']
+            avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] += avg_roc_metrics[race_comb]['perc_hits_same_style_clusters_mean']
+            avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] += avg_roc_metrics[race_comb]['perc_hits_diff_style_clusters_mean']
 
-    avg_roc_metrics['total_races']['acc_clusters_mean'] /= len(races_combs)
-    avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] /= len(races_combs)
-    avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] /= len(races_combs)
+        avg_roc_metrics['total_races']['acc_clusters_mean'] /= len(races_combs)
+        avg_roc_metrics['total_races']['perc_hits_same_style_clusters_mean'] /= len(races_combs)
+        avg_roc_metrics['total_races']['perc_hits_diff_style_clusters_mean'] /= len(races_combs)
     
     return avg_roc_metrics
 
