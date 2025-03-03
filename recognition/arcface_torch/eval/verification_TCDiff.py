@@ -1259,7 +1259,8 @@ def read_object_from_file(path):
 
 def write_object_to_file(path, any_obj):
     with open(path, 'wb') as fid:
-        pickle.dump(any_obj, fid)
+        # pickle.dump(any_obj, fid)
+        pickle.dump(any_obj, fid, protocol=4)   # allows file bigger than 4GB
 
 
 
