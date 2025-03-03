@@ -38,7 +38,8 @@ import sklearn
 import torch
 from mxnet import ndarray as nd
 from scipy import interpolate
-from scipy.stats import entropy, pearsonr, spearmanr, kendalltau
+from scipy.stats import entropy
+from scipy import stats
 from sklearn.decomposition import PCA
 from sklearn.model_selection import KFold
 from PIL import Image
@@ -1498,10 +1499,14 @@ def evaluate_performance_by_race_face_style(train_races_styles_clusters_count_no
 
             acc_clusters_mean = avg_roc_metrics[equiv_race]['acc_clusters_mean']
 
-            correlation_pearson, pvalue_pearson   = pearsonr(train_race_count_norm_percs[race], acc_clusters_mean)
-            correlation_spearman, pvalue_spearman = spearmanr(train_race_count_norm_percs[race], acc_clusters_mean)
-            correlation_kendall, pvalue_kendall   = kendalltau(train_race_count_norm_percs[race], acc_clusters_mean)
+            stat_normal_acc_clusters_mean, pvalue_normal_acc_clusters_mean                     = stats.normaltest(acc_clusters_mean)
+            stat_normal_train_race_count_norm_percs, pvalue_normal_train_race_count_norm_percs = stats.normaltest(train_race_count_norm_percs[race])
+            correlation_pearson, pvalue_pearson   = stats.pearsonr(train_race_count_norm_percs[race], acc_clusters_mean)
+            correlation_spearman, pvalue_spearman = stats.spearmanr(train_race_count_norm_percs[race], acc_clusters_mean)
+            correlation_kendall, pvalue_kendall   = stats.kendalltau(train_race_count_norm_percs[race], acc_clusters_mean)
 
+            acc_clusters_mean_corrs['train~N']  = {'corr':stat_normal_acc_clusters_mean,  'pval':pvalue_normal_acc_clusters_mean}
+            acc_clusters_mean_corrs['test~N']   = {'corr':stat_normal_train_race_count_norm_percs,  'pval':pvalue_normal_train_race_count_norm_percs}
             acc_clusters_mean_corrs['pearson']  = {'corr':correlation_pearson,  'pval':pvalue_pearson}
             acc_clusters_mean_corrs['spearman'] = {'corr':correlation_spearman, 'pval':pvalue_spearman}
             acc_clusters_mean_corrs['kendall']  = {'corr':correlation_kendall,  'pval':pvalue_kendall}
