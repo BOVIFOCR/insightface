@@ -52,6 +52,8 @@ import argparse   # Bernardo
 import itertools
 
 from loader_BUPT import Loader_BUPT
+from loader_HDA_Doppelganger import Loader_HDA_Doppelganger
+
 
 
 def load_dict(path: str) -> dict:
@@ -783,8 +785,8 @@ def calculate_val_far_analyze_races(args, threshold, dist, actual_issame, races_
     n_diff = np.sum(np.logical_not(actual_issame))
     # print(true_accept, false_accept)
     # print(n_same, n_diff)
-    val = float(true_accept) / float(n_same)
-    far = float(false_accept) / float(n_diff)
+    val = (float(true_accept) / float(n_same))  if n_same > 0 else 0.0
+    far = (float(false_accept) / float(n_diff)) if n_diff > 0 else 0.0
 
     # race analysis (African, Asian, Caucasian, Indian)
     if not races_list is None and not subj_list is None:
@@ -1159,10 +1161,11 @@ def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_lis
 
 
 @torch.no_grad()
-def test_analyze_races(args, data_set, backbone, batch_size, nfolds=10, races_combs=[], style_clusters_data={}):
+def test_analyze_races(args, name, data_set, backbone, batch_size, nfolds=10, races_combs=[], style_clusters_data={}):
     data_list = data_set[0]
     issame_list = data_set[1]
-    if len(data_set) > 2:
+    # if len(data_set) > 2:
+    if name.lower() == 'bupt':
         races_list = data_set[2]
         subj_list = data_set[3]
     else:
@@ -1553,7 +1556,7 @@ if __name__ == '__main__':
                         # default='lfw,cfp_ff,cfp_fp,agedb_30',          # original
                         # default='lfw,cfp_fp,agedb_30',                 # original
                         # default='lfw',                                 # Bernardo
-                        default='bupt',                                  # Bernardo
+                        default='bupt',                                  # Bernardo (hda_doppelganger, doppel_ver, 3d_tec, nd_twins)
                         help='test targets.')
     parser.add_argument('--protocol', default='/datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt', type=str, help='')
     parser.add_argument('--gpu', default=0, type=int, help='gpu id')
@@ -1629,12 +1632,34 @@ if __name__ == '__main__':
                     print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
                     data_set = read_object_from_file(path_unified_dataset)
 
-                ver_list.append(data_set)
-                ver_name_list.append(name)
-                # print('data_set:', data_set)
-                # sys.exit(0)
+            elif name.lower() == 'hda_doppelganger':
+                # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
+                path_unified_dataset = os.path.join(args.data_dir, f'dataset_{name.lower()}.pkl')
+                if not os.path.exists(path_unified_dataset):
+                    print(f'Loading individual images from folder \'{args.data_dir}\' ...')
+                    data_set = Loader_HDA_Doppelganger().load_dataset(args.data_dir, image_size)
+                    print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
+                    write_object_to_file(path_unified_dataset, data_set)
+                else:
+                    print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
+                    data_set = read_object_from_file(path_unified_dataset)
+
+            elif name.lower() == 'doppel_ver':
+                raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
+
+            elif name.lower() == '3d_tec':
+                raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
+
+            elif name.lower() == 'nd_twins':
+                raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
+
             else:
                 raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
+
+            ver_list.append(data_set)
+            ver_name_list.append(name)
+            # print('data_set:', data_set)
+            # sys.exit(0)
 
         test_style_clusters_data = None
         if args.test_style_clusters_data:
@@ -1691,7 +1716,7 @@ if __name__ == '__main__':
                     races_combs = None
 
                 acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
+                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, name.lower(), ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
                 results.append(acc2)
                 print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
                 # print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
