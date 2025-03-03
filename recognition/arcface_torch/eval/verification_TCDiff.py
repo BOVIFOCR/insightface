@@ -53,6 +53,7 @@ import itertools
 
 from loader_BUPT import Loader_BUPT
 from loader_HDA_Doppelganger import Loader_HDA_Doppelganger
+from loader_DoppelVer import Loader_DoppelVer
 
 
 
@@ -1556,7 +1557,7 @@ if __name__ == '__main__':
                         # default='lfw,cfp_ff,cfp_fp,agedb_30',          # original
                         # default='lfw,cfp_fp,agedb_30',                 # original
                         # default='lfw',                                 # Bernardo
-                        default='bupt',                                  # Bernardo (hda_doppelganger, doppel_ver, 3d_tec, nd_twins)
+                        default='bupt',                                  # Bernardo (hda_doppelganger, doppelver_doppelganger, doppelver_vise, 3d_tec, nd_twins)
                         help='test targets.')
     parser.add_argument('--protocol', default='/datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt', type=str, help='')
     parser.add_argument('--gpu', default=0, type=int, help='gpu id')
@@ -1644,7 +1645,19 @@ if __name__ == '__main__':
                     print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
                     data_set = read_object_from_file(path_unified_dataset)
 
-            elif name.lower() == 'doppel_ver':
+            elif name.lower() == 'doppelver_doppelganger':
+                # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
+                path_unified_dataset = os.path.join(args.data_dir, f'dataset_{name.lower()}.pkl')
+                if not os.path.exists(path_unified_dataset):
+                    print(f'Loading individual images from folder \'{args.data_dir}\' ...')
+                    data_set = Loader_DoppelVer().load_dataset(args.protocol, args.data_dir, image_size)
+                    print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
+                    write_object_to_file(path_unified_dataset, data_set)
+                else:
+                    print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
+                    data_set = read_object_from_file(path_unified_dataset)
+
+            elif name.lower() == 'doppelver_vise':
                 raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
 
             elif name.lower() == '3d_tec':
