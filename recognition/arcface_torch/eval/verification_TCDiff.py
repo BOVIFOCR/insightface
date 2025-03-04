@@ -1262,7 +1262,7 @@ def read_object_from_file(path):
 def write_object_to_file(path, any_obj):
     with open(path, 'wb') as fid:
         # pickle.dump(any_obj, fid)
-        pickle.dump(any_obj, fid, protocol=4)   # allows file bigger than 4GB
+        pickle.dump(any_obj, fid, protocol=pickle.HIGHEST_PROTOCOL)   # allows file bigger than 4GB
 
 
 
@@ -1654,11 +1654,16 @@ if __name__ == '__main__':
                 if not os.path.exists(path_unified_dataset):
                     print(f'Loading individual images from folder \'{args.data_dir}\' ...')
                     data_set = Loader_DoppelVer().load_dataset(args.protocol, args.data_dir, image_size)
+                    data_set[0][1] = None   # remove flipped images due its huge size (41GB)
                     print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
                     write_object_to_file(path_unified_dataset, data_set)
                 else:
                     print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
                     data_set = read_object_from_file(path_unified_dataset)
+                
+                print('Flipping images...')
+                if type(data_set[0]) is list and data_set[0][1] == None:
+                    data_set[0][1] = torch.flip(data_set[0][0], dims=[3])
 
             elif name.lower() == 'doppelver_vise':
                 raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
