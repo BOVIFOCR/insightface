@@ -1162,7 +1162,7 @@ def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_lis
 
 
 @torch.no_grad()
-def test_analyze_races(args, name, data_set, backbone, batch_size, nfolds=10, races_combs=[], style_clusters_data={}):
+def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_size, nfolds=10, races_combs=[], style_clusters_data={}):
     data_list = data_set[0]
     issame_list = data_set[1]
     # if len(data_set) > 2:
@@ -1172,7 +1172,9 @@ def test_analyze_races(args, name, data_set, backbone, batch_size, nfolds=10, ra
     else:
         races_list, subj_list = None, None
 
-    path_embeddings = os.path.join(args.data_dir, 'embeddings_list.pkl')
+    # path_embeddings = os.path.join(args.data_dir, 'embeddings_list.pkl')
+    os.makedirs(path_dir_model, exist_ok=True)
+    path_embeddings = os.path.join(path_dir_model, 'embeddings_list.pkl')
 
     if not os.path.exists(path_embeddings) or not args.use_saved_embedd:
         print('\nComputing embeddings...')
@@ -1728,9 +1730,11 @@ if __name__ == '__main__':
                     races_combs = get_races_combinations()
                 else:
                     races_combs = None
+                
+                path_dir_model = os.path.join(os.path.dirname(args.model), f'eval_{name.lower()}')
 
                 acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, name.lower(), ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
+                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, name.lower(), path_dir_model, ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
                 results.append(acc2)
                 print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
                 # print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
