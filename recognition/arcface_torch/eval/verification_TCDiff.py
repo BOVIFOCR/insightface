@@ -1613,6 +1613,7 @@ if __name__ == '__main__':
     for name in args.target.split(','):
 
         # Bernardo
+        time0 = datetime.datetime.now()
         print('\ndataset name:', name)
         print('args.data_dir:', args.data_dir)
 
@@ -1724,6 +1725,10 @@ if __name__ == '__main__':
             assert len(test_style_clusters_pairs_labels) == len(samples_orig_paths_list)
             # test_style_clusters_data['pairs_cluster_ids'] = test_style_clusters_pairs_labels
             test_style_clusters_data['pairs_cluster_ids'] = np.array(test_style_clusters_pairs_labels)
+    
+        time_now = datetime.datetime.now()
+        diff = time_now - time0
+        print('dataset loading time: %.2fs, %.2fm, %.2fh' % (diff.total_seconds(), diff.total_seconds()/60, diff.total_seconds()/3600))
     # sys.exit(0)
 
     if args.mode == 0:
