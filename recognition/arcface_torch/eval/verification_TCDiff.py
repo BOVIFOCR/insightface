@@ -1649,7 +1649,7 @@ if __name__ == '__main__':
                     print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
                     data_set = read_object_from_file(path_unified_dataset)
 
-            elif name.lower() == 'doppelver_doppelganger':
+            elif name.lower() == 'doppelver_doppelganger' or name.lower() == 'doppelver_vise':
                 # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
                 path_unified_dataset = os.path.join(args.data_dir, f'dataset_{name.lower()}.pkl')
                 if not os.path.exists(path_unified_dataset):
@@ -1661,13 +1661,10 @@ if __name__ == '__main__':
                 else:
                     print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
                     data_set = read_object_from_file(path_unified_dataset)
-                
+
                 print('Flipping images...')
                 if type(data_set[0]) is list and data_set[0][1] == None:
                     data_set[0][1] = torch.flip(data_set[0][0], dims=[3])
-
-            elif name.lower() == 'doppelver_vise':
-                raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
 
             elif name.lower() == '3d_tec':
                 raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
