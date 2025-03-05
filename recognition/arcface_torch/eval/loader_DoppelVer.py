@@ -36,7 +36,7 @@ class Loader_DoppelVer:
                 sample1_subj = line_data[3]
                 sample1      = line_data[4]
 
-                pair_label   = line_data[5]
+                pair_label   = int(line_data[5])
                 pair_split   = line_data[6]
 
                 if sample0_subj in self.invalid_subjs or sample1_subj in self.invalid_subjs:
