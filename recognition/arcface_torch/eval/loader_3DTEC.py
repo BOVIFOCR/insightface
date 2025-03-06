@@ -152,7 +152,7 @@ class Loader_3DTEC:
         gallery_info = self.load_gallery_or_probe_protocol(gallery_file)
         # print('gallery_info:', gallery_info)
         probe_file = gallery_file.replace('_gallery.','_probe.')
-        print(f"Loading probe file: \'{gallery_file}\'")
+        print(f"Loading probe file: \'{probe_file}\'")
         probe_info = self.load_gallery_or_probe_protocol(probe_file)
         # print('probe_info:', probe_info)
         # sys.exit(0)

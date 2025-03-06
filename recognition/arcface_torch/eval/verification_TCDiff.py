@@ -1173,9 +1173,9 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
     else:
         races_list, subj_list = None, None
 
-    # path_embeddings = os.path.join(args.data_dir, 'embeddings_list.pkl')
     os.makedirs(path_dir_model, exist_ok=True)
-    path_embeddings = os.path.join(path_dir_model, 'embeddings_list.pkl')
+    # path_embeddings = os.path.join(path_dir_model, 'embeddings_list.pkl')
+    path_embeddings = os.path.join(path_dir_model, f"embeddings_list_{args.protocol.split('/')[-1].split('.')[0]}.pkl")
 
     if not os.path.exists(path_embeddings) or not args.use_saved_embedd:
         print('\nComputing embeddings...')
@@ -1669,7 +1669,8 @@ if __name__ == '__main__':
 
             elif name.lower() == '3d_tec':
                 # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
-                path_unified_dataset = os.path.join(args.data_dir, f'dataset_{name.lower()}.pkl')
+                protocol_file_name = args.protocol.split('/')[-1].split('.')[0]
+                path_unified_dataset = os.path.join(args.data_dir, f'dataset_{name.lower()}_{protocol_file_name}.pkl')
                 if not os.path.exists(path_unified_dataset):
                     print(f'Loading individual images from folder \'{args.data_dir}\' ...')
                     data_set = Loader_3DTEC().load_dataset(args.protocol, args.data_dir, image_size, only_twins=True)
