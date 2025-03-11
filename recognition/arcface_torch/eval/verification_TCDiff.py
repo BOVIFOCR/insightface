@@ -55,6 +55,7 @@ from loader_BUPT import Loader_BUPT
 from loader_HDA_Doppelganger import Loader_HDA_Doppelganger
 from loader_DoppelVer import Loader_DoppelVer
 from loader_3DTEC import Loader_3DTEC
+from loader_NDTwins import Loader_NDTwins
 
 
 
@@ -1686,7 +1687,22 @@ if __name__ == '__main__':
                     data_set[0][1] = torch.flip(data_set[0][0], dims=[3])
 
             elif name.lower() == 'nd_twins':
-                raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
+                # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
+                protocol_file_name = args.protocol.split('/')[-1].split('.')[0]
+                path_unified_dataset = os.path.join(args.data_dir, f'dataset_{name.lower()}_{protocol_file_name}.pkl')
+                if not os.path.exists(path_unified_dataset):
+                    print(f'Loading individual images from folder \'{args.data_dir}\' ...')
+                    data_set = Loader_NDTwins().load_dataset(args.protocol, args.data_dir, image_size, only_twins=True)
+                    data_set[0][1] = None   # remove flipped images due its possible huge size
+                    print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
+                    write_object_to_file(path_unified_dataset, data_set)
+                else:
+                    print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
+                    data_set = read_object_from_file(path_unified_dataset)
+
+                print('Flipping images...')
+                if type(data_set[0]) is list and data_set[0][1] == None:
+                    data_set[0][1] = torch.flip(data_set[0][0], dims=[3])
 
             else:
                 raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
