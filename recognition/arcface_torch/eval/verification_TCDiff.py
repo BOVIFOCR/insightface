@@ -1,6 +1,20 @@
 # duo
 # export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --data-dir /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112 --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target bupt --protocol /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt --style-clusters-data /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
 
+# dataset HDA-Doppelganger
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target hda_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/HDA-Doppelgaenger_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs
+
+# dataset DoppelVer
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/DoppelgangerProtocol.csv
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_vise --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/ViSEProtocol.csv
+
+# dataset 3D-TEC
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp1_gallery.txt
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp3_gallery.txt
+
+# dataset ND-Twins-2009-2010
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target nd_twins --data-dir /datasets1/bjgbiesseck/ND-Twins-2009-2010/images_DETECTED_FACES_RETINAFACE_scales=[0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/ND-Twins-2009-2010/TwinsChallenge_1.0.0/TwinsChallenge/data/TwinsPairTable.csv
+
 """Helper for evaluation on the Labeled Faces in the Wild dataset 
 """
 
