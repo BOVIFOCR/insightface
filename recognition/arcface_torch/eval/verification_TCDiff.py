@@ -1565,6 +1565,7 @@ if __name__ == '__main__':
     # parser.add_argument('--data-dir', default='', help='')                                                                                   # original
     parser.add_argument('--data-dir', default='/datasets1/bjgbiesseck/MS-Celeb-1M/faces_emore', help='')                                     # Bernardo
     # parser.add_argument('--data-dir', default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112', help='')   # Bernardo
+    parser.add_argument('--data-dir2', default='/datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs', help='For protocols that uses more than one dataset')   # Bernardo
 
     # parser.add_argument('--network', default='r100', type=str, help='')   # default
     parser.add_argument('--network', default='r50', type=str, help='')      # Bernardo
@@ -1658,7 +1659,7 @@ if __name__ == '__main__':
                 path_unified_dataset = os.path.join(args.data_dir, f'dataset_{name.lower()}.pkl')
                 if not os.path.exists(path_unified_dataset):
                     print(f'Loading individual images from folder \'{args.data_dir}\' ...')
-                    data_set = Loader_HDA_Doppelganger().load_dataset(args.data_dir, image_size)
+                    data_set = Loader_HDA_Doppelganger().load_dataset(args.data_dir, args.data_dir2, image_size)
                     print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
                     write_object_to_file(path_unified_dataset, data_set)
                 else:
