@@ -78,7 +78,8 @@ def get_dataloader(
                 print(f'Loading train dataset \'{root_dir}\' ...')
                 train_set = GANDiffFace_loader(root_dir, transform)
 
-            elif 'DCFace'.lower() in root_dir.lower() and ':' in root_dir.lower():
+            elif ('DCFace'.lower() in root_dir.lower() and ':' in root_dir.lower()) or \
+                  'tcdiff'.lower() in root_dir.lower():
                 print(f'Loading train dataset \'{root_dir}\' ...')
                 train_set = DCFaceLocalTrained_loader(root_dir, transform, other_dataset=None, num_classes=cfg.num_classes, classes_selection_method='sequential')
 
