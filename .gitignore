@@ -110,6 +110,7 @@ recognition/model/*
 recognition/arcface_torch/wandb/*
 recognition/arcface_torch/work_dirs/*
 recognition/arcface_torch/work_dirs_pedro/*
+recognition/arcface_torch/work_dirs2/*
 
 recognition/arcface_torch/data/*
 
