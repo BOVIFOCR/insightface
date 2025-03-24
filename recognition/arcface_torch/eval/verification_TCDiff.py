@@ -949,12 +949,13 @@ def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, p
                      f'    actual: {str(bool(actual_issame[idxs_save[idx]]))}    pred: {str(bool(predict_issame[idxs_save[idx]]))} ({pair_type})', fontsize=16)
         
         fig.text(0.5, 0.85, chart_subtitle +
-                            f'    idx: {idxs_save[idx]}    cossim: {dist[idxs_save[idx]]:.3f}',
+                            f'    rank: {str(idx).zfill(7)}    pair-idx: {idxs_save[idx]}    cossim: {dist[idxs_save[idx]]:.3f}',
                             ha='center', fontsize=12)
         
         # Save the figure as a PNG file
         # output_path = os.path.join(path_folder, f'{pair_type}_{str(idx).zfill(5)}_pair={str(idxs_save[idx]).zfill(5)}_cossim={dist[idxs_save[idx]]:.3f}'+'.png')
-        output_path = os.path.join(path_folder, f'{pair_type}_pair={str(idxs_save[idx]).zfill(5)}_{str(idx).zfill(5)}_cossim={dist[idxs_save[idx]]:.3f}'+'.png')
+        # output_path = os.path.join(path_folder, f'{pair_type}_pair={str(idxs_save[idx]).zfill(5)}_{str(idx).zfill(5)}_cossim={dist[idxs_save[idx]]:.3f}'+'.png')
+        output_path = os.path.join(path_folder, f'rank={str(idx).zfill(7)}_{pair_type}_pair-idx={str(idxs_save[idx]).zfill(7)}_cossim={dist[idxs_save[idx]]:.3f}'+'.png')
         plt.savefig(output_path, format='png')
         plt.clf()
         plt.close(fig)
@@ -1070,6 +1071,7 @@ def save_best_and_worst_pairs(args, thresholds,
     # print('imgs.shape:', imgs.shape)
     path_eval_pairs = os.path.join(os.path.dirname(args.model), 'eval_pairs')
     path_eval_dataset = os.path.join(path_eval_pairs, args.target)
+    print('    path_eval_dataset:', path_eval_dataset)
 
     pair_type = 'fp'
     path_fp_dataset = os.path.join(path_eval_dataset, pair_type)
