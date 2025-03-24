@@ -962,7 +962,7 @@ def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, p
 
 
 
-def save_best_and_worst_pairs(args, thresholds,
+def save_best_and_worst_pairs(args, path_dir_model, thresholds,
                               embeddings1,
                               embeddings2,
                               actual_issame,
@@ -1068,9 +1068,7 @@ def save_best_and_worst_pairs(args, thresholds,
     # print(f'dist_fn[worst_fn_idx][:{args.save_best_worst_pairs}]:', dist_fn[worst_fn_idx][:args.save_best_worst_pairs])
     # sys.exit(0)
 
-    # print('imgs.shape:', imgs.shape)
-    path_eval_pairs = os.path.join(os.path.dirname(args.model), 'eval_pairs')
-    path_eval_dataset = os.path.join(path_eval_pairs, args.target)
+    path_eval_dataset = os.path.join(path_dir_model, 'eval_pairs_'+args.target)
     print('    path_eval_dataset:', path_eval_dataset)
 
     pair_type = 'fp'
@@ -1090,7 +1088,7 @@ def save_best_and_worst_pairs(args, thresholds,
 
 
 
-def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_list, nrof_folds=10, pca=0, races_combs=[], imgs=[], style_clusters_data={}):
+def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, races_list, subj_list, nrof_folds=10, pca=0, races_combs=[], imgs=[], style_clusters_data={}):
     # Calculate evaluation metrics
     thresholds = np.arange(0, 4, 0.01)
     if args.score == 'cos-sim':
@@ -1170,7 +1168,7 @@ def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_lis
 
     if args.save_best_worst_pairs > 0:
         print('Saving best/worst pairs...')
-        save_best_and_worst_pairs(args, thresholds,
+        save_best_and_worst_pairs(args, path_dir_model, thresholds,
                                   embeddings1,
                                   embeddings2,
                                   np.asarray(actual_issame),
@@ -1273,7 +1271,7 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
     print('\nDoing races test evaluation...')
     # _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
     _, _, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-        best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, embeddings, issame_list, races_list, subj_list, nrof_folds=nfolds, races_combs=races_combs, imgs=data_list[0], style_clusters_data=style_clusters_data)
+        best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, path_dir_model, embeddings, issame_list, races_list, subj_list, nrof_folds=nfolds, races_combs=races_combs, imgs=data_list[0], style_clusters_data=style_clusters_data)
     acc2, std2 = np.mean(accuracy), np.std(accuracy)
     return acc1, std1, acc2, std2, _xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
             best_acc, best_thresh, acc_at_thresh
