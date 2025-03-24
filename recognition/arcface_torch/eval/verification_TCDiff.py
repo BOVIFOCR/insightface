@@ -970,7 +970,8 @@ def save_best_and_worst_pairs(args, thresholds,
                               nrof_folds=10,
                               pca=0,
                               races_combs=[],
-                              imgs=[]):
+                              imgs=[],
+                              style_clusters_data={}):
     assert (embeddings1.shape[0] == embeddings2.shape[0])
     assert (embeddings1.shape[1] == embeddings2.shape[1])
     nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
@@ -1026,20 +1027,26 @@ def save_best_and_worst_pairs(args, thresholds,
         acc_train = np.zeros((nrof_thresholds))
         for threshold_idx, threshold in enumerate(thresholds):
             _, _, acc_train[threshold_idx], _ = calculate_accuracy_analyze_races(
-                args, threshold, dist[train_set], actual_issame[train_set], races_list=None, subj_list=None, races_combs=None)
+                args, threshold, dist[train_set], actual_issame[train_set], races_list=None, subj_list=None, races_combs=None, style_clusters_data=None)
         best_threshold_index = np.argmax(acc_train)
         for threshold_idx, threshold in enumerate(thresholds):
             tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, predict_issame[test_set] = calculate_accuracy_analyze_races(
-                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None)
+                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None, style_clusters_data=None)
         
         if not races_list is None and not subj_list is None:
             _, _, accuracy[fold_idx], metrics_races[fold_idx], predict_issame[test_set] = calculate_accuracy_analyze_races(
                 args, thresholds[best_threshold_index], dist[test_set],
-                actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs)
+                actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs, style_clusters_data=None)
+        
+            if not style_clusters_data is None:
+                _, _, accuracy[fold_idx], metrics_races[fold_idx], _ = calculate_accuracy_analyze_races(
+                    args, thresholds[best_threshold_index], dist[test_set],
+                    actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs, style_clusters_data=style_clusters_data)
+        
         else:
             _, _, accuracy[fold_idx], predict_issame[test_set] = calculate_accuracy_analyze_races(
                 args, thresholds[best_threshold_index], dist[test_set],
-                actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs)
+                actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs, style_clusters_data=None)
 
     tp = np.logical_and(predict_issame, actual_issame)
     fp = np.logical_and(predict_issame, np.logical_not(actual_issame))
@@ -1170,7 +1177,8 @@ def evaluate_analyze_races(args, embeddings, actual_issame, races_list, subj_lis
                                   nrof_folds=nrof_folds,
                                   pca=pca,
                                   races_combs=races_combs,
-                                  imgs=imgs)
+                                  imgs=imgs,
+                                  style_clusters_data=style_clusters_data)
 
     print('--------------------')
     return tpr, fpr, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
