@@ -924,7 +924,12 @@ def save_scores_pred_labels_frcsyn_format(file_path, float_array, int_array):
 
 
 def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, path_folder, chart_title, chart_subtitle='', pair_type=''):
-    for idx in range(args.save_best_worst_pairs):
+    num_pairs_to_save = args.save_best_worst_pairs
+    if args.save_best_worst_pairs < 0:
+        num_pairs_to_save = len(idxs_save)
+
+    for idx in range(num_pairs_to_save):
+        print(f'{idx}/{num_pairs_to_save}', end='\r')
         if dist[idxs_save[idx]] == -np.inf or dist[idxs_save[idx]] == np.inf:
             break
 
@@ -959,6 +964,7 @@ def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, p
         plt.savefig(output_path, format='png')
         plt.clf()
         plt.close(fig)
+    print()
 
 
 
@@ -1167,7 +1173,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
         save_scores_pred_labels_frcsyn_format(path_file_scores_labels, dist, pred_labels_at_thresh)
 
 
-    if args.save_best_worst_pairs > 0:
+    if args.save_best_worst_pairs != 0:
         print('Saving best/worst pairs...')
         save_best_and_worst_pairs(args, path_dir_model, thresholds,
                                   embeddings1,
