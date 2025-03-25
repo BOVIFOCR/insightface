@@ -1069,6 +1069,7 @@ def save_best_and_worst_pairs(args, path_dir_model, thresholds,
     # sys.exit(0)
 
     path_eval_dataset = os.path.join(path_dir_model, 'eval_pairs_'+args.target)
+    if args.protocol: path_eval_dataset += f"_prot={args.protocol.split('/')[-1].split('.')[0]}" 
     print('    path_eval_dataset:', path_eval_dataset)
 
     pair_type = 'fp'
@@ -1573,7 +1574,7 @@ if __name__ == '__main__':
     # parser.add_argument('--data-dir', default='', help='')                                                                                   # original
     parser.add_argument('--data-dir', default='/datasets1/bjgbiesseck/MS-Celeb-1M/faces_emore', help='')                                     # Bernardo
     # parser.add_argument('--data-dir', default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112', help='')   # Bernardo
-    parser.add_argument('--data-dir2', default='/datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs', help='For protocols that uses more than one dataset')   # Bernardo
+    parser.add_argument('--data-dir2', default='', help='For protocols that uses more than one dataset')   # /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs
 
     # parser.add_argument('--network', default='r100', type=str, help='')   # default
     parser.add_argument('--network', default='r50', type=str, help='')      # Bernardo
@@ -1587,7 +1588,7 @@ if __name__ == '__main__':
                         # default='lfw',                                 # Bernardo
                         default='bupt',                                  # Bernardo (hda_doppelganger, doppelver_doppelganger, doppelver_vise, 3d_tec, nd_twins)
                         help='test targets.')
-    parser.add_argument('--protocol', default='/datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt', type=str, help='')
+    parser.add_argument('--protocol', default='', type=str, help='')     # /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt
     parser.add_argument('--gpu', default=0, type=int, help='gpu id')
     parser.add_argument('--batch-size', default=32, type=int, help='')
     parser.add_argument('--max', default='', type=str, help='')
