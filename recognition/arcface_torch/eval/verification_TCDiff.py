@@ -929,7 +929,7 @@ def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, p
         num_pairs_to_save = len(idxs_save)
 
     for idx in range(num_pairs_to_save):
-        print(f'{idx}/{num_pairs_to_save}', end='\r')
+        print(f'    {idx}/{num_pairs_to_save}', end='\r')
         if dist[idxs_save[idx]] == -np.inf or dist[idxs_save[idx]] == np.inf:
             break
 
