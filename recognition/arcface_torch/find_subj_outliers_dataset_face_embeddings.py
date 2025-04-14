@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument('--embeddings', type=str, default='/datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs_FACE_EMBEDDINGS')
     parser.add_argument('--embedd-ext', type=str, default='_id_feat.pt')
     parser.add_argument('--corresp-imgs', type=str, default='/datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs')
+    parser.add_argument('--threshold', type=str, default='0.4')   # can also be a list: 0.4,0.3,0.25
     parser.add_argument('--pattern', type=str, default='')
     parser.add_argument('--output-path', type=str, default='')
     args = parser.parse_args()
@@ -47,15 +48,16 @@ def get_all_files_in_path_by_subj(folder_path, file_extension=['.jpg','.jpeg','.
     files_by_subj = {}
     total_found_files = 0
 
-    for root, dirs, files in os.walk(folder_path):
-        if root == folder_path:
-            continue
-        
-        subj = os.path.basename(root)
-        matched_files = get_all_files_in_path(root, file_extension)
+    subj_dirs_paths =  [os.path.join(folder_path,name) for name in os.listdir(folder_path) \
+                        if os.path.isdir(os.path.join(folder_path, name))]
+    subj_dirs_paths = natural_sort(subj_dirs_paths)
+
+    for subj_dir_path in subj_dirs_paths:
+        subj_name = os.path.basename(subj_dir_path)
+        matched_files = get_all_files_in_path(subj_dir_path, file_extension)
         total_found_files += len(matched_files)
         if matched_files:
-            files_by_subj[subj] = matched_files
+            files_by_subj[subj_name] = matched_files
         print(f'Found subj: {len(files_by_subj)}    embedds: {total_found_files}', end='\r')
     print()
     return files_by_subj
@@ -190,9 +192,12 @@ if __name__ == '__main__':
 
     print()
     total_elapsed_time = 0.0
-    sim_thresholds = [0.4]
+    
+    # sim_thresholds = [0.4]
     # sim_thresholds = [0.3]
     # sim_thresholds = [0.25]
+    sim_thresholds = [float(t) for t in args.threshold.split(',')]
+
     for sim_thresh in sim_thresholds:
         args.output_path = os.path.join(args.output_path, f'thresh={sim_thresh}')
         os.makedirs(args.output_path, exist_ok=True)
