@@ -7,6 +7,7 @@ import torch
 import re
 import time
 import glob
+import shutil
 
 import matplotlib.pyplot as plt
 
@@ -166,6 +167,12 @@ def compute_avg_face_embedd_iteratively(embedds, thresh=0.5):
     return avg_embedd
 
 
+def copy_files_to_folder(corresp_imgs_paths, indexes_inliers, path_inliers_imgs):
+    for idx_inlier in indexes_inliers:
+        src_img_path = corresp_imgs_paths[idx_inlier]
+        shutil.copy2(src_img_path, path_inliers_imgs)
+
+
 
 if __name__ == '__main__':
     args = parse_args()
@@ -189,6 +196,13 @@ if __name__ == '__main__':
     for sim_thresh in sim_thresholds:
         args.output_path = os.path.join(args.output_path, f'thresh={sim_thresh}')
         os.makedirs(args.output_path, exist_ok=True)
+
+        path_figures = os.path.join(args.output_path, 'figures')
+        os.makedirs(path_figures, exist_ok=True)
+        path_inliers = os.path.join(args.output_path, 'inliers')
+        os.makedirs(path_inliers, exist_ok=True)
+        path_outliers = os.path.join(args.output_path, 'outliers')
+        os.makedirs(path_outliers, exist_ok=True)
 
         for idx_subj, (subj_name, subj_embedds_paths) in enumerate(dict_subj_embedds_paths.items()):
             if args.pattern in subj_name:
@@ -228,10 +242,22 @@ if __name__ == '__main__':
                 
                 title_inliers_outliers = 'Inliers and Outliers faces compared to AVG face embedding'
                 filename_inliers_outliers = f'subj={subj_name}_inliers_outliers_faces_thresh={sim_thresh}_ninliers={len(indexes_inliers)}_noutliers={len(indexes_outliers)}.png'
-                path_inliers_outliers = os.path.join(args.output_path, filename_inliers_outliers)
-                print('Saving figure with inliers and outliers:', path_inliers_outliers)
+                path_figure = os.path.join(path_figures, filename_inliers_outliers)
+                print('Saving figure with inliers and outliers:', path_figure)
                 save_figure_with_inliers_outliers_faces(corresp_imgs_paths, corresp_imgs, similarities_to_avg_embedd,
-                                                        indexes_inliers, indexes_outliers, title_inliers_outliers, path_inliers_outliers)
+                                                        indexes_inliers, indexes_outliers, title_inliers_outliers, path_figure)
+
+                # Copying inliers
+                path_inliers_imgs = os.path.join(path_inliers, subj_name)
+                os.makedirs(path_inliers_imgs, exist_ok=True)
+                print(f'Copying inliers to: \'{path_inliers_imgs}\'')
+                copy_files_to_folder(corresp_imgs_paths, indexes_inliers, path_inliers_imgs)
+
+                # Copying outliers
+                path_outliers_imgs = os.path.join(path_outliers, subj_name)
+                os.makedirs(path_outliers_imgs, exist_ok=True)
+                print(f'Copying outliers to: \'{path_outliers_imgs}\'')
+                copy_files_to_folder(corresp_imgs_paths, indexes_outliers, path_outliers_imgs)
 
 
                 elapsed_time = time.time()-start_time
