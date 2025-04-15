@@ -158,14 +158,16 @@ def save_figure_with_inliers_outliers_faces(
     plt.close()
 
 
-def compute_avg_face_embedd_iteratively(embedds, thresh=0.5):
-    selected_idxs = np.array([0], dtype=int)
+def compute_avg_face_embedd_iteratively(embedds, thresh=0.5, subj_reference_embedd_idx=0):
+    # selected_idxs = np.array([0], dtype=int)
+    selected_idxs = np.array([subj_reference_embedd_idx], dtype=int)
     avg_embedd = embedds[selected_idxs]
-    for idx_candidate_embedd in range(1, len(embedds)):
-        cossim = cosine_similarity(embedds[idx_candidate_embedd], avg_embedd)
-        if cossim >= thresh:
-            selected_idxs = np.append(selected_idxs, idx_candidate_embedd)
-            avg_embedd = embedds[selected_idxs].mean(axis=0)
+    for idx_candidate_embedd in range(0, len(embedds)):
+        if idx_candidate_embedd != subj_reference_embedd_idx:
+            cossim = cosine_similarity(embedds[idx_candidate_embedd], avg_embedd)
+            if cossim >= thresh:
+                selected_idxs = np.append(selected_idxs, idx_candidate_embedd)
+                avg_embedd = embedds[selected_idxs].mean(axis=0)
     return avg_embedd
 
 
@@ -174,6 +176,18 @@ def copy_files_to_folder(corresp_imgs_paths, indexes_inliers, path_inliers_imgs)
         src_img_path = corresp_imgs_paths[idx_inlier]
         shutil.copy2(src_img_path, path_inliers_imgs)
 
+
+def get_subj_reference_embedd_idx(subj_name=''):
+    subj_ref_embedd_idx = {
+        'Kiernan Shipka': 4,
+        'Hilary Duff': 1,
+        'Kate Middleton': 2,
+        'Angela Kinsey': 1,
+        'Jon Stewart': 6
+    }
+    if subj_name in subj_ref_embedd_idx:
+        return subj_ref_embedd_idx[subj_name]
+    return 0
 
 
 if __name__ == '__main__':
@@ -226,8 +240,10 @@ if __name__ == '__main__':
 
                     one_embedd = torch.load(embedd_path)
                     subj_embedds[idx_embedd] = one_embedd
+
                 # subj_avg_embedd = subj_embedds.mean(axis=0)
-                subj_avg_embedd = compute_avg_face_embedd_iteratively(subj_embedds, sim_thresh)
+                subj_refer_embedd_idx = get_subj_reference_embedd_idx(subj_name)
+                subj_avg_embedd = compute_avg_face_embedd_iteratively(subj_embedds, sim_thresh, subj_refer_embedd_idx)
                 subj_avg_embedd = np.expand_dims(subj_avg_embedd, axis=0)
                 # print('subj_avg_embedd.shape:', subj_avg_embedd.shape)
                 # sys.exit(0)
