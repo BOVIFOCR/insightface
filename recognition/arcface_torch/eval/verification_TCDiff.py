@@ -3,8 +3,8 @@
 
 
 # -------------
-# dataset HDA-Doppelganger
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target hda_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/HDA-Doppelgaenger_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs
+# dataset HDA-Doppelganger + FRGC
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target hda_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/HDA-Doppelgaenger_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --data-dir2 /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs
 
 
 # -------------
@@ -77,6 +77,7 @@ from backbones import get_model
 
 import argparse   # Bernardo
 import itertools
+import logging
 
 from loader_BUPT import Loader_BUPT
 from loader_HDA_Doppelganger import Loader_HDA_Doppelganger
@@ -84,6 +85,29 @@ from loader_DoppelVer import Loader_DoppelVer
 from loader_3DTEC import Loader_3DTEC
 from loader_NDTwins import Loader_NDTwins
 
+
+
+def init_logger(log_file_path: str, level=logging.INFO) -> logging.Logger:
+    logger = logging.getLogger(log_file_path)
+    logger.setLevel(level)
+
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+
+    file_handler = logging.FileHandler(log_file_path, mode='w')
+    file_handler.setLevel(level)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    return logger
 
 
 def load_dict(path: str) -> dict:
@@ -966,10 +990,11 @@ def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, s
         fig.suptitle(chart_title + 
                      f'    actual: {str(bool(actual_issame[idxs_save[idx]]))}    pred: {str(bool(predict_issame[idxs_save[idx]]))} ({pair_type})', fontsize=13)
         
-        fig.text(0.5, 0.85, chart_subtitle + '\n' +
-                            f'subjs: {subj_list[idxs_save[idx]]}\n'
-                            f'    rank: {str(idx).zfill(7)}    pair-idx: {idxs_save[idx]}    cossim: {dist[idxs_save[idx]]:.3f}',
-                            ha='center', fontsize=12)
+        final_subtitle = chart_subtitle + '\n'
+        if not subj_list is None:
+            final_subtitle += f'subjs: {subj_list[idxs_save[idx]]}\n'
+        final_subtitle += f'rank: {str(idx).zfill(7)}    pair-idx: {idxs_save[idx]}    cossim: {dist[idxs_save[idx]]:.3f}'        
+        fig.text(0.5, 0.85, final_subtitle, ha='center', fontsize=12)
         
         # Save the figure as a PNG file
         # output_path = os.path.join(path_folder, f'{pair_type}_{str(idx).zfill(5)}_pair={str(idxs_save[idx]).zfill(5)}_cossim={dist[idxs_save[idx]]:.3f}'+'.png')
@@ -1821,28 +1846,40 @@ if __name__ == '__main__':
                     races_combs = None
                 
                 path_dir_model = os.path.join(os.path.dirname(args.model), f'eval_{name.lower()}')
+                
+                path_log_results_file = os.path.join(path_dir_model, 'results_logs.txt')
+                logger = init_logger(path_log_results_file)
 
                 acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
                         best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, name.lower(), path_dir_model, ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
                 results.append(acc2)
-                print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
-                # print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
-                print('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
-                print('[%s]TAR: %1.5f+-%1.5f    FAR: %1.5f' % (ver_name_list[i], val, val_std, far))
+
+                # print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
+                # print('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
+                # print('[%s]TAR: %1.5f+-%1.5f    FAR: %1.5f' % (ver_name_list[i], val, val_std, far))
+                logger.info('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
+                logger.info('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
+                logger.info('[%s]TAR: %1.5f+-%1.5f    FAR: %1.5f' % (ver_name_list[i], val, val_std, far))
 
                 for fmr_target in list(fnmr_mean.keys()):
-                    print('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
+                    # print('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
+                    logger.info('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
 
                 if not races_combs is None:
                     for race_comb in races_combs:
                         race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
-                        print('[%s]Acc %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']), end='    ')
-                        print('[%s]TAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']), end='    ')
-                        print('[%s]FAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
+                        # print('[%s]Acc %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']), end='    ')
+                        # print('[%s]TAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']), end='    ')
+                        # print('[%s]FAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
+                        logger.info('[%s]Acc %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb_str, avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']))
+                        logger.info('[%s]TAR %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']))
+                        logger.info('[%s]FAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
 
-                print('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
+                # print('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
+                logger.info('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
                 if not acc_at_thresh is None:
-                    print('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
+                    # print('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
+                    logger.info('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
 
 
                 if not test_style_clusters_data is None:
