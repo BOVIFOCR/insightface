@@ -11,7 +11,8 @@ import re
 
 class Loader_DoppelVer:
     def __init__(self):
-        self.invalid_subjs = ['Hilary Duff']   # wrong annotation labels, images without faces
+        # wrong annotation labels, images without faces
+        self.invalid_subjs = ['Hilary Duff', 'Penelope Cruz', 'Monica Cruz']
 
 
     def load_protocol(self, protocol_file):
@@ -67,10 +68,21 @@ class Loader_DoppelVer:
         return sorted(l, key=alphanum_key)
 
 
-    def update_paths(self, protocol, data_dir, replace_ext='.png', inplace=True):
+    def remove_elements_by_indices(self, data_list, indices_to_remove):
+        if not indices_to_remove:
+            return list(data_list)
+        indices_to_remove = sorted(indices_to_remove, reverse=True)
+        new_list = list(data_list)
+        for index in indices_to_remove:
+            del new_list[index]
+        return new_list
+
+
+    def update_paths(self, protocol, data_dir, replace_ext='.png', ignore_missing_imgs=False, inplace=True):
         if not inplace:
             protocol = copy.deepcopy(protocol)
 
+        indexes_invalid_pairs = []
         num_img_multiple_faces = 0
         for i, pair in enumerate(protocol):
             sample0 = pair['sample0']
@@ -88,18 +100,30 @@ class Loader_DoppelVer:
             sample0_name, sample0_ext = os.path.splitext(sample0)
             sample0_pattern = os.path.join(glob.escape(os.path.join(data_dir, pair['sample0_subj'])), sample0_name+'*'+sample0_ext)
             path_sample0 = self.natural_sort(glob.glob(sample0_pattern))
-            assert len(path_sample0) > 0, f'Error, no file found with pattern \'{sample0_pattern}\''
-            # assert len(path_sample0) < 2, f'Error, more than one file found with pattern \'{sample0_pattern}\': {path_sample0}'
-            if len(path_sample0) > 1: num_img_multiple_faces += 1
-            path_sample0 = path_sample0[0]
+            if not ignore_missing_imgs:
+                assert len(path_sample0) > 0, f'Error, no file found with pattern \'{sample0_pattern}\''
+                # assert len(path_sample0) < 2, f'Error, more than one file found with pattern \'{sample0_pattern}\': {path_sample0}'
+                if len(path_sample0) > 1: num_img_multiple_faces += 1
+                path_sample0 = path_sample0[0]
+            else:
+                if len(path_sample0) == 0 and not i in indexes_invalid_pairs:
+                    indexes_invalid_pairs.append(i)
+                elif len(path_sample0) > 0:
+                    path_sample0 = path_sample0[0]
 
             sample1_name, sample1_ext = os.path.splitext(sample1)
             sample1_pattern = os.path.join(glob.escape(os.path.join(data_dir, pair['sample1_subj'])), sample1_name+'*'+sample1_ext)
             path_sample1 = self.natural_sort(glob.glob(sample1_pattern))
-            assert len(path_sample1) > 0, f'Error, no file found with pattern \'{sample1_pattern}\''
-            # assert len(path_sample1) < 2, f'Error, more than one file found with pattern \'{sample1_pattern}\': {path_sample1}'
-            if len(path_sample1) > 1: num_img_multiple_faces += 1
-            path_sample1 = path_sample1[0]
+            if not ignore_missing_imgs:
+                assert len(path_sample1) > 0, f'Error, no file found with pattern \'{sample1_pattern}\''
+                # assert len(path_sample1) < 2, f'Error, more than one file found with pattern \'{sample1_pattern}\': {path_sample1}'
+                if len(path_sample1) > 1: num_img_multiple_faces += 1
+                path_sample1 = path_sample1[0]
+            else:
+                if len(path_sample1) == 0 and not i in indexes_invalid_pairs:
+                    indexes_invalid_pairs.append(i)
+                elif len(path_sample1) > 0:
+                    path_sample1 = path_sample1[0]
 
             pair['sample0'] = path_sample0
             pair['sample1'] = path_sample1
@@ -108,13 +132,19 @@ class Loader_DoppelVer:
             # print('pair_label:', pair_label)
             # print('--------------')
         print('num_img_multiple_faces:', num_img_multiple_faces)
+        print('num removed pairs due missing imgs:', len(indexes_invalid_pairs))
+        
+        indexes_invalid_pairs = list(set(indexes_invalid_pairs))
+        if len(indexes_invalid_pairs) > 0:
+            protocol = self.remove_elements_by_indices(protocol, indexes_invalid_pairs)
+
         return protocol
 
 
-    def load_dataset(self, protocol_file, data_dir, image_size, replace_ext='.png'):
+    def load_dataset(self, protocol_file, data_dir, image_size, ignore_missing_imgs=False, replace_ext='.png'):
         print(f"Loading protocol: \'{protocol_file}\'")
         pairs_orig = self.load_protocol(protocol_file)
-        pairs_update = self.update_paths(pairs_orig, data_dir, replace_ext, inplace=False)
+        pairs_update = self.update_paths(pairs_orig, data_dir, replace_ext, ignore_missing_imgs, inplace=False)
 
         data_list = []
         for flip in [0, 1]:
