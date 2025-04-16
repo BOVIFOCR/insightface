@@ -12,6 +12,7 @@
 # export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/DoppelgangerProtocol.csv
 # export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_vise --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/ViSEProtocol.csv
 
+#     Just inliers
 # export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs_FACE_EMBEDDINGS_OUTLIERS_INLIERS/thresh=0.4/inliers --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/DoppelgangerProtocol.csv
 # export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_vise --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs_FACE_EMBEDDINGS_OUTLIERS_INLIERS/thresh=0.4/inliers --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/ViSEProtocol.csv
 
@@ -935,7 +936,7 @@ def save_scores_pred_labels_frcsyn_format(file_path, float_array, int_array):
             file.write(f"{float_val},{int_val}\n")
 
 
-def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, path_folder, chart_title, chart_subtitle='', pair_type=''):
+def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, subj_list, path_folder, chart_title, chart_subtitle='', pair_type=''):
     num_pairs_to_save = args.save_best_worst_pairs
     if args.save_best_worst_pairs < 0:
         num_pairs_to_save = len(idxs_save)
@@ -963,9 +964,10 @@ def save_img_pairs(args, actual_issame, predict_issame, dist, idxs_save, imgs, p
         
         # Add title and subtitle if provided
         fig.suptitle(chart_title + 
-                     f'    actual: {str(bool(actual_issame[idxs_save[idx]]))}    pred: {str(bool(predict_issame[idxs_save[idx]]))} ({pair_type})', fontsize=16)
+                     f'    actual: {str(bool(actual_issame[idxs_save[idx]]))}    pred: {str(bool(predict_issame[idxs_save[idx]]))} ({pair_type})', fontsize=13)
         
-        fig.text(0.5, 0.85, chart_subtitle +
+        fig.text(0.5, 0.85, chart_subtitle + '\n' +
+                            f'subjs: {subj_list[idxs_save[idx]]}\n'
                             f'    rank: {str(idx).zfill(7)}    pair-idx: {idxs_save[idx]}    cossim: {dist[idxs_save[idx]]:.3f}',
                             ha='center', fontsize=12)
         
@@ -1095,14 +1097,14 @@ def save_best_and_worst_pairs(args, path_dir_model, thresholds,
     os.makedirs(path_fp_dataset, exist_ok=True)
     chart_title = f'Dataset: {args.target}'
     chart_subtitle = ''
-    save_img_pairs(args, actual_issame, predict_issame, dist_fp, worst_fp_idx, imgs, path_fp_dataset, chart_title, chart_subtitle, pair_type)
+    save_img_pairs(args, actual_issame, predict_issame, dist_fp, worst_fp_idx, imgs, subj_list, path_fp_dataset, chart_title, chart_subtitle, pair_type)
     
     pair_type = 'fn'
     path_fn_dataset = os.path.join(path_eval_dataset, pair_type)
     os.makedirs(path_fn_dataset, exist_ok=True)
     chart_title = f'Dataset: {args.target}'
     chart_subtitle = ''
-    save_img_pairs(args, actual_issame, predict_issame, dist_fn, worst_fn_idx, imgs, path_fn_dataset, chart_title, chart_subtitle, pair_type)
+    save_img_pairs(args, actual_issame, predict_issame, dist_fn, worst_fn_idx, imgs, subj_list, path_fn_dataset, chart_title, chart_subtitle, pair_type)
     # sys.exit(0)
 
 
@@ -1212,6 +1214,11 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
     if name.lower() == 'bupt':
         races_list = data_set[2]
         subj_list = data_set[3]
+    elif 'doppelver' in name.lower() or 'nd_twins' in name.lower() or '3d_tec' in name.lower():
+        races_list = None
+        subj_list = data_set[2]
+        samples_orig_paths_list = data_set[3]
+        samples_update_paths_list = data_set[4]
     else:
         races_list, subj_list = None, None
 

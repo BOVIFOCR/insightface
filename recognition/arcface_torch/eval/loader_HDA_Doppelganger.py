@@ -158,8 +158,8 @@ class Loader_HDA_Doppelganger:
 
         issame_list               = np.array([bool(pairs_update[i]['pair_label']) for i in range(len(pairs_update))])
         # gender_list             = np.array([sorted((pairs_update[i]['sample0_gender'], pairs_update[i]['sample1_gender'])) for i in range(len(pairs_update))])
-        samples_orig_paths_list   = np.array([sorted((pairs_orig[i]['sample0'], pairs_orig[i]['sample1'])) for i in range(len(pairs_orig))])
-        samples_update_paths_list = np.array([sorted((pairs_update[i]['sample0'], pairs_update[i]['sample1'])) for i in range(len(pairs_update))])
+        samples_orig_paths_list   = np.array([(pairs_orig[i]['sample0'], pairs_orig[i]['sample1']) for i in range(len(pairs_orig))])
+        samples_update_paths_list = np.array([(pairs_update[i]['sample0'], pairs_update[i]['sample1']) for i in range(len(pairs_update))])
         
         for idx in range(len(pairs_update) * 2):
             idx_pair = int(idx/2)

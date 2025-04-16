@@ -153,9 +153,9 @@ class Loader_DoppelVer:
 
         issame_list               = np.array([bool(pairs_update[i]['pair_label']) for i in range(len(pairs_update))])
         # races_list              = np.array([sorted((pairs_update[i]['sample0_race'], pairs_update[i]['sample1_race'])) for i in range(len(pairs_update))])
-        subj_list                 = np.array([sorted((pairs_update[i]['sample0_subj'], pairs_update[i]['sample1_subj'])) for i in range(len(pairs_update))])
-        samples_orig_paths_list   = np.array([sorted((pairs_orig[i]['sample0'], pairs_orig[i]['sample1'])) for i in range(len(pairs_orig))])
-        samples_update_paths_list = np.array([sorted((pairs_update[i]['sample0'], pairs_update[i]['sample1'])) for i in range(len(pairs_update))])
+        subj_list                 = np.array([(pairs_update[i]['sample0_subj'], pairs_update[i]['sample1_subj']) for i in range(len(pairs_update))])
+        samples_orig_paths_list   = np.array([(pairs_orig[i]['sample0'], pairs_orig[i]['sample1']) for i in range(len(pairs_orig))])
+        samples_update_paths_list = np.array([(pairs_update[i]['sample0'], pairs_update[i]['sample1']) for i in range(len(pairs_update))])
         # for i, (label, races, subjs) in enumerate(zip(issame_list, races_list, subj_list)):
             # print(f'pair:{i} - label: {label} - races: {races} - subjs: {subjs}')
             # if races[0] == races[1]:
