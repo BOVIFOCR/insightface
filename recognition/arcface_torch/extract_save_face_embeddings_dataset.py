@@ -96,10 +96,14 @@ if __name__ == '__main__':
             os.makedirs(output_path_dir, exist_ok=True)
 
             img_name, img_ext = os.path.splitext(os.path.basename(path_img))
-            output_path_id_feat      = os.path.join(output_path_dir, img_name+'_id_feat.pt')
+            # output_path_id_feat = os.path.join(output_path_dir, img_name+'_id_feat.pt')
+            output_path_id_feat = os.path.join(output_path_dir, img_name+'_embedding_r100_arcface.npy')
 
             print('output_path_id_feat:', output_path_id_feat)
-            torch.save(id_feat_img, output_path_id_feat)
+            if output_path_id_feat.endswith('.pt'):
+                torch.save(id_feat_img, output_path_id_feat)
+            elif output_path_id_feat.endswith('.npy'):
+                
 
             elapsed_time = time.time()-start_time
             total_elapsed_time += elapsed_time
