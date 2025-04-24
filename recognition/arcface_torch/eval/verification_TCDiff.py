@@ -1,31 +1,31 @@
 # duo
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --data-dir /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112 --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target bupt --protocol /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt --style-clusters-data /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --data-dir /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112 --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target bupt --protocol /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt --style-clusters-data /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
 
 
 # -------------
 # dataset HDA-Doppelganger + FRGC
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target hda_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/HDA-Doppelgaenger_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --data-dir2 /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target hda_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/HDA-Doppelgaenger_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --data-dir2 /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs
 
 
 # -------------
 # dataset DoppelVer
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/DoppelgangerProtocol.csv
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_vise --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/ViSEProtocol.csv
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/DoppelgangerProtocol.csv
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_vise --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/ViSEProtocol.csv
 
 #     Just inliers
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs_FACE_EMBEDDINGS_OUTLIERS_INLIERS/thresh=0.4/inliers --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/DoppelgangerProtocol.csv
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_vise --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs_FACE_EMBEDDINGS_OUTLIERS_INLIERS/thresh=0.4/inliers --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/ViSEProtocol.csv
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs_FACE_EMBEDDINGS_OUTLIERS_INLIERS/thresh=0.4/inliers --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/DoppelgangerProtocol.csv
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target doppelver_vise --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/Images/CCA_Images_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs_FACE_EMBEDDINGS_OUTLIERS_INLIERS/thresh=0.4/inliers --protocol /datasets1/bjgbiesseck/doppelgangers_lookalikes/DoppelVer/ViSEProtocol.csv
 
 
 # -------------
 # dataset 3D-TEC
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp1_gallery.txt
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp3_gallery.txt
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp1_gallery.txt
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp3_gallery.txt
 
 
 # -------------
 # dataset ND-Twins-2009-2010
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model ../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target nd_twins --data-dir /datasets1/bjgbiesseck/ND-Twins-2009-2010/images_DETECTED_FACES_RETINAFACE_scales=[0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/ND-Twins-2009-2010/TwinsChallenge_1.0.0/TwinsChallenge/data/TwinsPairTable.csv
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target nd_twins --data-dir /datasets1/bjgbiesseck/ND-Twins-2009-2010/images_DETECTED_FACES_RETINAFACE_scales=[0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/ND-Twins-2009-2010/TwinsChallenge_1.0.0/TwinsChallenge/data/TwinsPairTable.csv
 
 
 """Helper for evaluation on the Labeled Faces in the Wild dataset 
@@ -691,6 +691,19 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
         return tpr, fpr, acc, metrics_races, predict_issame
 
 
+def calculate_eer(fmr, fnmr, thresholds):
+    abs_diff = np.abs(fmr - fnmr)
+    min_index = np.argmin(abs_diff)
+    eer = (fmr[min_index] + fnmr[min_index]) / 2
+    eer_threshold = thresholds[min_index]
+    if min_index > 0 and min_index < len(fmr) - 1:
+        if (fmr[min_index+1] - fmr[min_index-1]) != 0:
+            a = (fnmr[min_index+1] - fnmr[min_index-1]) / (fmr[min_index+1] - fmr[min_index-1])
+            eer_threshold = thresholds[min_index-1] + (thresholds[min_index+1] - thresholds[min_index-1]) / (1 + a)
+            eer = (fmr[min_index-1] + fnmr[min_index+1]) / 2
+    return eer, eer_threshold
+        
+
 def calculate_fnmr_fmr_analyze_races(args, thresholds,
                                     embeddings1,
                                     embeddings2,
@@ -710,6 +723,8 @@ def calculate_fnmr_fmr_analyze_races(args, thresholds,
     for fmr_target in fmr_targets:
         fnmr[fmr_target] = np.zeros(nrof_folds)
     fmr = np.zeros(nrof_folds)
+    eer           = np.zeros(nrof_folds)
+    eer_threshold = np.zeros(nrof_folds)
 
     # diff = np.subtract(embeddings1, embeddings2)
     # dist = np.sum(np.square(diff), 1)
@@ -741,12 +756,22 @@ def calculate_fnmr_fmr_analyze_races(args, thresholds,
             fnmr[fmr_target][fold_idx], fmr[fold_idx] = get_fnmr_fmr_analyze_races(
                 args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None)
 
+        # Computes Equal Error Rate (EER)
+        fmr_test  = np.zeros(nrof_thresholds)
+        fnmr_test = np.zeros(nrof_thresholds)
+        for threshold_idx, threshold in enumerate(thresholds):
+            fnmr_test[threshold_idx], fmr_test[threshold_idx] = get_fnmr_fmr_analyze_races(
+                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None)
+        eer[fold_idx], eer_threshold[fold_idx] = calculate_eer(fmr_test, fnmr_test, thresholds)
+
     fnmr_mean, fnmr_std = {}, {}
     for fmr_target in fmr_targets:
         fnmr_mean[fmr_target] = np.mean(fnmr[fmr_target])
         fnmr_std[fmr_target] = np.std(fnmr[fmr_target])
     fmr_mean = np.mean(fmr)
-    return fnmr_mean, fnmr_std, fmr_mean
+    eer_mean = np.mean(eer)
+    eer_threshold_mean = np.mean(eer_threshold)
+    return fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean
 
 
 def get_fnmr_fmr_analyze_races(args, threshold, dist, actual_issame, races_list, subj_list, races_combs):
@@ -1172,7 +1197,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
         thresholds = np.flipud(thresholds)
     fmr_targets = [1e-2, 1e-3, 1e-4]
     print('Doing FNMR@FMR analysis...')
-    fnmr_mean, fnmr_std, fmr_mean = calculate_fnmr_fmr_analyze_races(args, thresholds,
+    fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean = calculate_fnmr_fmr_analyze_races(args, thresholds,
                                                 embeddings1,
                                                 embeddings2,
                                                 np.asarray(actual_issame),
@@ -1227,8 +1252,8 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                   style_clusters_data=style_clusters_data)
 
     print('--------------------')
-    return tpr, fpr, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-            best_acc, best_thresh, acc_at_thresh
+    return tpr, fpr, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean, \
+           avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh
 
 
 @torch.no_grad()
@@ -1321,11 +1346,11 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
 
     print('\nDoing races test evaluation...')
     # _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
-    _, _, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-        best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, path_dir_model, embeddings, issame_list, races_list, subj_list, nrof_folds=nfolds, races_combs=races_combs, imgs=data_list[0], style_clusters_data=style_clusters_data)
+    _, _, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean, \
+        avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, path_dir_model, embeddings, issame_list, races_list, subj_list, nrof_folds=nfolds, races_combs=races_combs, imgs=data_list[0], style_clusters_data=style_clusters_data)
     acc2, std2 = np.mean(accuracy), np.std(accuracy)
-    return acc1, std1, acc2, std2, _xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-            best_acc, best_thresh, acc_at_thresh
+    return acc1, std1, acc2, std2, _xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean, \
+        avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh
 
 
 def read_object_from_file(path):
@@ -1630,7 +1655,7 @@ if __name__ == '__main__':
     parser.add_argument('--network', default='r50', type=str, help='')      # Bernardo
     parser.add_argument('--model',
                         # default='../trained_models/ms1mv3_arcface_r100_fp16/backbone.pth',          # Bernardo
-                        default='../work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt',   # (Trained only on CASIA-Webface)   Bernardo
+                        default='/home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt',   # (Trained only on CASIA-Webface)   Bernardo
                         help='path to load model.')
     parser.add_argument('--target',
                         # default='lfw,cfp_ff,cfp_fp,agedb_30',          # original
@@ -1852,8 +1877,8 @@ if __name__ == '__main__':
                 path_log_results_file += '.txt'
                 logger = init_logger(path_log_results_file)
 
-                acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, avg_roc_metrics, avg_val_metrics, \
-                        best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, name.lower(), path_dir_model, ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
+                acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean, \
+                    avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, name.lower(), path_dir_model, ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
                 results.append(acc2)
 
                 # print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
@@ -1866,6 +1891,8 @@ if __name__ == '__main__':
                 for fmr_target in list(fnmr_mean.keys()):
                     # print('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
                     logger.info('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
+
+                logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
 
                 if not races_combs is None:
                     for race_comb in races_combs:
