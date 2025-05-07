@@ -190,6 +190,11 @@ class Loader_DoppelVer:
             if idx % 100 == 0:
                 print(f"loading pairs {idx}/{len(pairs_update)*2}", end='\r')
         print('\n', data_list[0].shape)
-        return data_list, issame_list, subj_list, samples_orig_paths_list, samples_update_paths_list
+        # return data_list, issame_list, subj_list, samples_orig_paths_list, samples_update_paths_list
+        return {'data_list': data_list,
+                'issame_list': issame_list,
+                'subj_list': subj_list, 
+                'samples_orig_paths_list': samples_orig_paths_list, 
+                'samples_update_paths_list': samples_update_paths_list}
 
 
