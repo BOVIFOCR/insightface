@@ -19,13 +19,13 @@
 
 # -------------
 # dataset 3D-TEC
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp1_gallery.txt --facial-attributes 
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp3_gallery.txt --facial-attributes 
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp1_gallery.txt --facial-attributes /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages_FACE_ATTRIB
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target 3d_tec --data-dir /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages --protocol /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC/exp3_gallery.txt --facial-attributes /datasets1/bjgbiesseck/3D-Twins-Expression-Challenge_3D-TEC_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs/textureimages_FACE_ATTRIB
 
 
 # -------------
 # dataset ND-Twins-2009-2010
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target nd_twins --data-dir /datasets1/bjgbiesseck/ND-Twins-2009-2010/images_DETECTED_FACES_RETINAFACE_scales=[0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/ND-Twins-2009-2010/TwinsChallenge_1.0.0/TwinsChallenge/data/TwinsPairTable.csv --facial-attributes
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target nd_twins --data-dir /datasets1/bjgbiesseck/ND-Twins-2009-2010/images_DETECTED_FACES_RETINAFACE_scales=[0.25]_nms=0.4/imgs --protocol /datasets1/bjgbiesseck/ND-Twins-2009-2010/TwinsChallenge_1.0.0/TwinsChallenge/data/TwinsPairTable.csv --facial-attributes /datasets1/bjgbiesseck/ND-Twins-2009-2010/images_DETECTED_FACES_RETINAFACE_scales=[0.25]_nms=0.4/imgs_FACE_ATTRIB
 
 
 """Helper for evaluation on the Labeled Faces in the Wild dataset 
@@ -1313,24 +1313,28 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
 def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_size, nfolds=10, races_combs=[], style_clusters_data={}):
     # data_list = data_set[0]
     # issame_list = data_set[1]
-    data_list   = data_set['data_list']
-    issame_list = data_set['issame_list']
-    
-    if name.lower() == 'bupt':
-        # races_list = data_set[2]
-        # subj_list = data_set[3]
-        races_list = data_set['races_list']
-        subj_list = data_set['subj_list']
-    elif 'doppelver' in name.lower() or 'nd_twins' in name.lower() or '3d_tec' in name.lower():
-        races_list = None
-        subj_list = data_set[2]
-        samples_orig_paths_list = data_set[3]
-        samples_update_paths_list = data_set[4]
-    else:
-        races_list, subj_list = None, None
-    
-    if 'races_list' in data_set:
-        races_list = data_set['races_list']
+    data_list                 = data_set['data_list']                 if 'data_list'                 in data_set else None
+    issame_list               = data_set['issame_list']               if 'issame_list'               in data_set else None
+    races_list                = data_set['races_list']                if 'races_list'                in data_set else None
+    subj_list                 = data_set['subj_list']                 if 'subj_list'                 in data_set else None
+    samples_orig_paths_list   = data_set['samples_orig_paths_list']   if 'samples_orig_paths_list'   in data_set else None
+    samples_update_paths_list = data_set['samples_update_paths_list'] if 'samples_update_paths_list' in data_set else None
+
+    # if name.lower() == 'bupt':
+    #     # races_list = data_set[2]
+    #     # subj_list = data_set[3]
+    #     races_list = data_set['races_list']
+    #     subj_list = data_set['subj_list']
+    # elif 'doppelver' in name.lower() or 'nd_twins' in name.lower() or '3d_tec' in name.lower():
+    #     races_list = None
+    #     subj_list = data_set[2]
+    #     samples_orig_paths_list = data_set[3]
+    #     samples_update_paths_list = data_set[4]
+    # else:
+    #     races_list, subj_list = None, None
+    #
+    # if 'races_list' in data_set:
+    #     races_list = data_set['races_list']
 
     os.makedirs(path_dir_model, exist_ok=True)
     # path_embeddings = os.path.join(path_dir_model, 'embeddings_list.pkl')
@@ -1843,7 +1847,8 @@ if __name__ == '__main__':
                 if not os.path.exists(path_unified_dataset):
                     print(f'Loading individual images from folder \'{args.data_dir}\' ...')
                     data_set = Loader_DoppelVer().load_dataset(args.protocol, args.data_dir, image_size, args.ignore_missing_imgs)
-                    data_set[0][1] = None   # remove flipped images due its huge size (41GB)
+                    # data_set[0][1] = None   # remove flipped images due its huge size (41GB)
+                    data_set['data_list'][1] = None   # remove flipped images due its huge size (41GB)
                     print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
                     write_object_to_file(path_unified_dataset, data_set)
                 else:
@@ -1851,8 +1856,8 @@ if __name__ == '__main__':
                     data_set = read_object_from_file(path_unified_dataset)
 
                 print('Flipping images...')
-                if type(data_set[0]) is list and data_set[0][1] == None:
-                    data_set[0][1] = torch.flip(data_set[0][0], dims=[3])
+                if type(data_set['data_list']) is list and data_set['data_list'][1] == None:
+                    data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
 
             elif name.lower() == '3d_tec':
                 # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
@@ -1861,7 +1866,7 @@ if __name__ == '__main__':
                 if not os.path.exists(path_unified_dataset):
                     print(f'Loading individual images from folder \'{args.data_dir}\' ...')
                     data_set = Loader_3DTEC().load_dataset(args.protocol, args.data_dir, image_size, only_twins=True)
-                    data_set[0][1] = None   # remove flipped images due its possible huge size
+                    data_set['data_list'][1] = None   # remove flipped images due its possible huge size
                     print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
                     write_object_to_file(path_unified_dataset, data_set)
                 else:
@@ -1869,8 +1874,8 @@ if __name__ == '__main__':
                     data_set = read_object_from_file(path_unified_dataset)
 
                 print('Flipping images...')
-                if type(data_set[0]) is list and data_set[0][1] == None:
-                    data_set[0][1] = torch.flip(data_set[0][0], dims=[3])
+                if type(data_set[0]) is list and data_set['data_list'][1] == None:
+                    data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
 
             elif name.lower() == 'nd_twins':
                 # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
@@ -1879,7 +1884,7 @@ if __name__ == '__main__':
                 if not os.path.exists(path_unified_dataset):
                     print(f'Loading individual images from folder \'{args.data_dir}\' ...')
                     data_set = Loader_NDTwins().load_dataset(args.protocol, args.data_dir, image_size, only_twins=True)
-                    data_set[0][1] = None   # remove flipped images due its possible huge size
+                    data_set['data_list'][1] = None   # remove flipped images due its possible huge size
                     print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
                     write_object_to_file(path_unified_dataset, data_set)
                 else:
@@ -1887,8 +1892,8 @@ if __name__ == '__main__':
                     data_set = read_object_from_file(path_unified_dataset)
 
                 print('Flipping images...')
-                if type(data_set[0]) is list and data_set[0][1] == None:
-                    data_set[0][1] = torch.flip(data_set[0][0], dims=[3])
+                if type(data_set[0]) is list and data_set['data_list'][1] == None:
+                    data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
 
             else:
                 raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
@@ -1896,6 +1901,15 @@ if __name__ == '__main__':
 
             if args.facial_attributes != '':
                 data_set = load_facial_attributes(data_set, args)
+
+                # # TEST
+                # print('-----------------')
+                # for idx_pair, (pair_update_path, pair_race) in enumerate(zip(data_set['samples_update_paths_list'], data_set['races_list'])):
+                #     print(f'idx_pair: {idx_pair}')
+                #     print(f'pair_update_path: {pair_update_path}')
+                #     print(f'pair_race: {pair_race}')
+                #     print('-----------------')
+                # sys.exit(0)
 
 
             ver_list.append(data_set)
@@ -1988,7 +2002,7 @@ if __name__ == '__main__':
                 logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
 
                 # print('avg_roc_metrics:', avg_roc_metrics)
-                print('avg_val_metrics:', avg_val_metrics)
+                # print('avg_val_metrics:', avg_val_metrics)
                 # sys.exit(0)
 
                 if not races_combs is None:
