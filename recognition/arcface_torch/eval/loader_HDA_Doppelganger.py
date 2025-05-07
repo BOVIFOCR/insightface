@@ -184,6 +184,10 @@ class Loader_HDA_Doppelganger:
         print('\n', data_list[0].shape)
         # return data_list, issame_list, races_list, subj_list, samples_orig_paths_list, samples_update_paths_list
         # return data_list, issame_list, gender_list, samples_orig_paths_list, samples_update_paths_list
-        return data_list, issame_list, samples_orig_paths_list, samples_update_paths_list
+        # return data_list, issame_list, samples_orig_paths_list, samples_update_paths_list
+        return {'data_list':data_list,
+                'issame_list': issame_list,
+                'samples_orig_paths_list': samples_orig_paths_list,
+                'samples_update_paths_list': samples_update_paths_list}
 
 

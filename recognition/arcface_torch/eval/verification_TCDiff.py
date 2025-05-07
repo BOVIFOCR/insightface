@@ -1,10 +1,10 @@
 # duo
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --data-dir /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112 --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target bupt --protocol /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt --style-clusters-data /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --data-dir /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112 --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target bupt --protocol /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt --test-style-clusters-data /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
 
 
 # -------------
 # dataset HDA-Doppelganger + FRGC
-# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target hda_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/HDA-Doppelgaenger_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --data-dir2 /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs
+# export CUDA_VISIBLE_DEVICES=0; python verification_TCDiff.py --network r100 --model /home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt --target hda_doppelganger --data-dir /datasets1/bjgbiesseck/doppelgangers_lookalikes/HDA-Doppelgaenger_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs --facial-attributes /datasets1/bjgbiesseck/doppelgangers_lookalikes/HDA-Doppelgaenger_DETECTED_FACES_RETINAFACE_scales=[1.0,0.5,0.25]_nms=0.4/imgs_FACE_ATTRIB --data-dir2 /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs --facial-attributes2 /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs_FACE_ATTRIB
 
 
 # -------------
@@ -57,6 +57,7 @@
 import datetime
 import os, sys
 import pickle
+import glob
 
 import torch
 import mxnet as mx
@@ -85,6 +86,51 @@ from loader_DoppelVer import Loader_DoppelVer
 from loader_3DTEC import Loader_3DTEC
 from loader_NDTwins import Loader_NDTwins
 
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='do verification')
+    # general
+    # parser.add_argument('--data-dir', default='', help='')                                                                                   # original
+    parser.add_argument('--data-dir', default='/datasets1/bjgbiesseck/MS-Celeb-1M/faces_emore', help='')                                     # Bernardo
+    # parser.add_argument('--data-dir', default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112', help='')   # Bernardo
+    parser.add_argument('--data-dir2', default='', help='For protocols that uses more than one dataset')   # /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs
+
+    # parser.add_argument('--network', default='r100', type=str, help='')   # default
+    parser.add_argument('--network', default='r50', type=str, help='')      # Bernardo
+    parser.add_argument('--model',
+                        # default='../trained_models/ms1mv3_arcface_r100_fp16/backbone.pth',          # Bernardo
+                        default='/home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt',   # (Trained only on CASIA-Webface)   Bernardo
+                        help='path to load model.')
+    parser.add_argument('--target',
+                        # default='lfw,cfp_ff,cfp_fp,agedb_30',          # original
+                        # default='lfw,cfp_fp,agedb_30',                 # original
+                        # default='lfw',                                 # Bernardo
+                        default='bupt',                                  # Bernardo (hda_doppelganger, doppelver_doppelganger, doppelver_vise, 3d_tec, nd_twins)
+                        help='test targets.')
+    parser.add_argument('--protocol', default='', type=str, help='')     # /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt
+    parser.add_argument('--gpu', default=0, type=int, help='gpu id')
+    parser.add_argument('--batch-size', default=32, type=int, help='')
+    parser.add_argument('--max', default='', type=str, help='')
+    parser.add_argument('--mode', default=0, type=int, help='')
+    parser.add_argument('--nfolds', default=10, type=int, help='')
+    parser.add_argument('--use-saved-embedd', action='store_true')
+    parser.add_argument('--ignore-missing-imgs', action='store_true')
+
+    parser.add_argument('--fusion-dist', type=str, default='', help='')                 # Bernardo
+    parser.add_argument('--score', default='cos-sim', type=str, help='')                # Bernardo ('cos-sim', 'cos-dist' or 'eucl-dist')
+    parser.add_argument('--save-scores-at-thresh', type=float, default=-1.0, help='')   # Bernardo (0.5)
+
+    parser.add_argument('--save-best-worst-pairs', default=0, type=int)
+
+    parser.add_argument('--test-style-clusters-data', default='', type=str)    # /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
+    parser.add_argument('--train-style-clusters-data', default='', type=str)   # /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
+    
+    parser.add_argument('--facial-attributes', default='', type=str)           # 
+    parser.add_argument('--facial-attributes2', default='', type=str)          # 
+
+    args = parser.parse_args()
+    return args
 
 
 def init_logger(log_file_path: str, level=logging.INFO) -> logging.Logger:
@@ -422,6 +468,13 @@ def get_races_combinations():
     return races_comb
 
 
+def get_races_combinations2(races_list):
+    # races_comb = [list(r) for r in set(tuple(race_comb) for race_comb in races_list)]
+    races_comb = [tuple(r) for r in set(tuple(race_comb) for race_comb in races_list)]
+    # print('races_comb:', races_comb)
+    return races_comb
+
+
 def get_avg_roc_metrics_races(metrics_races=[{}], races_combs=[]):
     avg_roc_metrics = {}
     for i, race_comb in enumerate(races_combs):
@@ -556,15 +609,15 @@ def calculate_roc_analyze_races(args, thresholds,
             tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy_analyze_races(
                 args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None, style_clusters_data=None)
         
-        if not races_list is None and not subj_list is None:
+        if not races_list is None:
             _, _, accuracy[fold_idx], metrics_races[fold_idx], _ = calculate_accuracy_analyze_races(
                 args, thresholds[best_threshold_index], dist[test_set],
-                actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs, style_clusters_data=None)
+                actual_issame[test_set], races_list[test_set], subj_list=None, races_combs=races_combs, style_clusters_data=None)
 
             if not style_clusters_data is None:
                 _, _, accuracy[fold_idx], metrics_races[fold_idx], _ = calculate_accuracy_analyze_races(
                     args, thresholds[best_threshold_index], dist[test_set],
-                    actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs, style_clusters_data=style_clusters_data)
+                    actual_issame[test_set], races_list[test_set], subj_list=None, races_combs=races_combs, style_clusters_data=style_clusters_data)
 
         else:
             _, _, accuracy[fold_idx], _ = calculate_accuracy_analyze_races(
@@ -572,7 +625,7 @@ def calculate_roc_analyze_races(args, thresholds,
                 actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs, style_clusters_data=None)
 
     avg_roc_metrics = None
-    if not races_list is None and not subj_list is None:
+    if not races_list is None:
         avg_roc_metrics = get_avg_roc_metrics_races(metrics_races, races_combs)
     
     tpr = np.mean(tprs, 0)
@@ -598,7 +651,7 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
         style_clusters_pairs_labels = style_clusters_data['pairs_cluster_ids']
 
     # race analysis (African, Asian, Caucasian, Indian)
-    if not races_list is None and not subj_list is None:
+    if not races_list is None:
         metrics_races = {}
         for race_comb in races_combs:
             metrics_races[race_comb] = {}
@@ -837,15 +890,15 @@ def calculate_val_analyze_races(args, thresholds,
         else:
             threshold = 0.0
 
-        if not races_list is None and not subj_list is None:
+        if not races_list is None:
             val[fold_idx], far[fold_idx], metrics_races[fold_idx] = calculate_val_far_analyze_races(
-                args, threshold, dist[test_set], actual_issame[test_set], races_list[test_set], subj_list[test_set], races_combs=races_combs)
+                args, threshold, dist[test_set], actual_issame[test_set], races_list[test_set], subj_list=None, races_combs=races_combs)
         else:
             val[fold_idx], far[fold_idx] = calculate_val_far_analyze_races(
                 args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs)
 
     avg_val_metrics = None
-    if not races_list is None and not subj_list is None:
+    if not races_list is None:
         avg_val_metrics = get_avg_val_metrics_races(metrics_races, races_combs)
 
     val_mean = np.mean(val)
@@ -868,7 +921,7 @@ def calculate_val_far_analyze_races(args, threshold, dist, actual_issame, races_
     far = (float(false_accept) / float(n_diff)) if n_diff > 0 else 0.0
 
     # race analysis (African, Asian, Caucasian, Indian)
-    if not races_list is None and not subj_list is None:
+    if not races_list is None:
         metrics_races = {}
         for race_comb in races_combs:
             metrics_races[race_comb] = {}
@@ -880,8 +933,8 @@ def calculate_val_far_analyze_races(args, threshold, dist, actual_issame, races_
             metrics_races[race_comb]['n_same'] = np.sum(actual_issame[indices_race_comb])
             metrics_races[race_comb]['n_diff'] = np.sum(np.logical_not(actual_issame[indices_race_comb]))
 
-            metrics_races[race_comb]['val'] = float(metrics_races[race_comb]['true_accept']) / float(metrics_races[race_comb]['n_same'])
-            metrics_races[race_comb]['far'] = float(metrics_races[race_comb]['false_accept']) / float(metrics_races[race_comb]['n_diff'])
+            metrics_races[race_comb]['val'] = float(metrics_races[race_comb]['true_accept']) / float(metrics_races[race_comb]['n_same'])  if float(metrics_races[race_comb]['n_same']) > 0 else 0.0
+            metrics_races[race_comb]['far'] = float(metrics_races[race_comb]['false_accept']) / float(metrics_races[race_comb]['n_diff']) if float(metrics_races[race_comb]['n_diff']) > 0 else 0.0
     
     if races_list is None:
         return val, far
@@ -1258,12 +1311,16 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
 
 @torch.no_grad()
 def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_size, nfolds=10, races_combs=[], style_clusters_data={}):
-    data_list = data_set[0]
-    issame_list = data_set[1]
-    # if len(data_set) > 2:
+    # data_list = data_set[0]
+    # issame_list = data_set[1]
+    data_list   = data_set['data_list']
+    issame_list = data_set['issame_list']
+    
     if name.lower() == 'bupt':
-        races_list = data_set[2]
-        subj_list = data_set[3]
+        # races_list = data_set[2]
+        # subj_list = data_set[3]
+        races_list = data_set['races_list']
+        subj_list = data_set['subj_list']
     elif 'doppelver' in name.lower() or 'nd_twins' in name.lower() or '3d_tec' in name.lower():
         races_list = None
         subj_list = data_set[2]
@@ -1271,6 +1328,9 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
         samples_update_paths_list = data_set[4]
     else:
         races_list, subj_list = None, None
+    
+    if 'races_list' in data_set:
+        races_list = data_set['races_list']
 
     os.makedirs(path_dir_model, exist_ok=True)
     # path_embeddings = os.path.join(path_dir_model, 'embeddings_list.pkl')
@@ -1640,49 +1700,75 @@ def evaluate_performance_by_race_face_style(train_races_styles_clusters_count_no
     save_correlations_per_race_scatter_chart(train_race_count_norm_percs, avg_roc_metrics, global_title, output_path)
 
 
+def load_facial_attributes(data_set, args):
+    # samples_orig_paths_list   = data_set['samples_orig_paths_list']
+    samples_update_paths_list = data_set['samples_update_paths_list']
+    # print('samples_update_paths_list:', samples_update_paths_list)
+
+    corresp_facial_attribs_paths = [None] * len(samples_update_paths_list)
+    print(f'\nSearching corresponding facial attributes: \'{args.facial_attributes}\'')
+    for idx_pair, pair_samples_paths in enumerate(samples_update_paths_list):
+        pair_facial_attribs_paths = [None, None]
+        for idx_file, file_path in enumerate(pair_samples_paths):
+            file_parent_dir = os.path.dirname(file_path)
+            file_name = os.path.basename(file_path)
+            # print('file_name:', file_name)
+            # _, file_ext = os.path.splitext(file_path)
+
+            if args.data_dir in file_path:
+                current_data_dir = args.data_dir
+                current_facial_attributes = args.facial_attributes
+            elif args.data_dir2 in file_path:
+                current_data_dir = args.data_dir2
+                current_facial_attributes = args.facial_attributes2
+
+            attrib_parent_dir = file_parent_dir.replace(current_data_dir, current_facial_attributes)
+            # attrib_name_pattern = attrib_parent_dir + '/' + file_name.replace(file_ext, '') + '.pkl'
+            attrib_name_pattern = attrib_parent_dir + '/' + file_name.split('.')[0] + '*.pkl'
+            attrib_name_pattern = attrib_name_pattern.replace('[','*').replace(']','*')
+            # print('attrib_name_pattern:', attrib_name_pattern)
+            attrib_path = glob.glob(attrib_name_pattern)
+            assert len(attrib_path) > 0, f'\nNo file found with the pattern \'{attrib_name_pattern}\''
+            assert len(attrib_path) == 1, f'\nMore than 1 file found: \'{attrib_path}\''
+            attrib_path = attrib_path[0]
+            pair_facial_attribs_paths[idx_file] = attrib_path
+            # print('attrib_path:', attrib_path)
+            print(f'{idx_pair}/{len(samples_update_paths_list)} - attrib_path: \'{attrib_path}\'', end='\r')
+            # sys.exit(0)
+        corresp_facial_attribs_paths[idx_pair] = pair_facial_attribs_paths
+    print()
+
+    corresp_facial_attribs = [None] * len(corresp_facial_attribs_paths)
+    print(f'Loading corresponding individual facial attributes')
+    for idx_pair, pair_face_attribs_paths in enumerate(corresp_facial_attribs_paths):
+        pair_facial_attribs = [None, None]
+        for idx_file, file_path in enumerate(pair_face_attribs_paths):
+            print(f'{idx_pair}/{len(corresp_facial_attribs)} - file_path: \'{file_path}\'', end='\r')
+            facial_attribs = load_dict(file_path)
+            pair_facial_attribs[idx_file] = facial_attribs
+        corresp_facial_attribs[idx_pair] = pair_facial_attribs
+    print()
+
+    races_list   = [None] * len(corresp_facial_attribs)
+    genders_list = [None] * len(corresp_facial_attribs)
+    ages_list    = [None] * len(corresp_facial_attribs)
+    for idx_pair, pair_facial_attribs in enumerate(corresp_facial_attribs):
+        races_list[idx_pair]   = [pair_facial_attribs[0]['race']['dominant_race'], pair_facial_attribs[1]['race']['dominant_race']]
+        # print(f'races_list[{idx_pair}]:', races_list[idx_pair])
+        genders_list[idx_pair] = [pair_facial_attribs[0]['gender'], pair_facial_attribs[1]['gender']]
+        ages_list[idx_pair]    = [pair_facial_attribs[0]['age'],    pair_facial_attribs[1]['age']]
+
+    data_set['races_list']   = np.array(races_list)
+    data_set['genders_list'] = np.array(genders_list)
+    data_set['ages_list']    = np.array(ages_list)
+    return data_set
+
+
 
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='do verification')
-    # general
-    # parser.add_argument('--data-dir', default='', help='')                                                                                   # original
-    parser.add_argument('--data-dir', default='/datasets1/bjgbiesseck/MS-Celeb-1M/faces_emore', help='')                                     # Bernardo
-    # parser.add_argument('--data-dir', default='/datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112', help='')   # Bernardo
-    parser.add_argument('--data-dir2', default='', help='For protocols that uses more than one dataset')   # /datasets1/bjgbiesseck/MICA/FRGC/images_DETECTED_FACES_RETINAFACE_scales=[0.5]_nms=0.4/imgs
-
-    # parser.add_argument('--network', default='r100', type=str, help='')   # default
-    parser.add_argument('--network', default='r50', type=str, help='')      # Bernardo
-    parser.add_argument('--model',
-                        # default='../trained_models/ms1mv3_arcface_r100_fp16/backbone.pth',          # Bernardo
-                        default='/home/bjgbiesseck/GitHub/insightface/recognition/arcface_torch/work_dirs/casia_frcsyn_r100/2023-10-14_09-51-11_GPU0/model.pt',   # (Trained only on CASIA-Webface)   Bernardo
-                        help='path to load model.')
-    parser.add_argument('--target',
-                        # default='lfw,cfp_ff,cfp_fp,agedb_30',          # original
-                        # default='lfw,cfp_fp,agedb_30',                 # original
-                        # default='lfw',                                 # Bernardo
-                        default='bupt',                                  # Bernardo (hda_doppelganger, doppelver_doppelganger, doppelver_vise, 3d_tec, nd_twins)
-                        help='test targets.')
-    parser.add_argument('--protocol', default='', type=str, help='')     # /datasets2/1st_frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt
-    parser.add_argument('--gpu', default=0, type=int, help='gpu id')
-    parser.add_argument('--batch-size', default=32, type=int, help='')
-    parser.add_argument('--max', default='', type=str, help='')
-    parser.add_argument('--mode', default=0, type=int, help='')
-    parser.add_argument('--nfolds', default=10, type=int, help='')
-    parser.add_argument('--use-saved-embedd', action='store_true')
-    parser.add_argument('--ignore-missing-imgs', action='store_true')
-
-    parser.add_argument('--fusion-dist', type=str, default='', help='')                 # Bernardo
-    parser.add_argument('--score', default='cos-sim', type=str, help='')                # Bernardo ('cos-sim', 'cos-dist' or 'eucl-dist')
-    parser.add_argument('--save-scores-at-thresh', type=float, default=-1.0, help='')   # Bernardo (0.5)
-
-    parser.add_argument('--save-best-worst-pairs', default=0, type=int)
-
-    parser.add_argument('--test-style-clusters-data', default='', type=str)    # /datasets2/1st_frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112_JUST-PROTOCOL-IMGS_STYLE_FEATURES_CLUSTERING_FROM_1_CASIA-WebFace-imgs_crops_112x112_STYLE_FEATURES_CLUSTERING-feature=_style-_distance=cosine-nclusters=100/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
-    parser.add_argument('--train-style-clusters-data', default='', type=str)   # /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112_STYLE_FEATURES_CLUSTERING/feature=_style/_distance=cosine/nclusters=100/clusters-data_feature=_style.pt_distance=cosine_nclusters=100.pkl
-
-    args = parser.parse_args()
-
+    args = parse_arguments()
 
     image_size = [112, 112]
     print('image_size', image_size)
@@ -1807,6 +1893,11 @@ if __name__ == '__main__':
             else:
                 raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
 
+
+            if args.facial_attributes != '':
+                data_set = load_facial_attributes(data_set, args)
+
+
             ver_list.append(data_set)
             ver_name_list.append(name)
             # print('data_set:', data_set)
@@ -1865,10 +1956,12 @@ if __name__ == '__main__':
             results = []
             for model in nets:
 
-                if name.lower() == 'bupt':
-                    races_combs = get_races_combinations()
-                else:
-                    races_combs = None
+                # if name.lower() == 'bupt':
+                #     races_combs = get_races_combinations()
+                # else:
+                #     races_combs = None
+                if 'races_list' in data_set:
+                    races_combs = get_races_combinations2(data_set['races_list'])
                 
                 path_dir_model = os.path.join(os.path.dirname(args.model), f'eval_{name.lower()}')
                 
@@ -1894,6 +1987,10 @@ if __name__ == '__main__':
 
                 logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
 
+                # print('avg_roc_metrics:', avg_roc_metrics)
+                print('avg_val_metrics:', avg_val_metrics)
+                # sys.exit(0)
+
                 if not races_combs is None:
                     for race_comb in races_combs:
                         race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
@@ -1902,7 +1999,7 @@ if __name__ == '__main__':
                         # print('[%s]FAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
                         logger.info('[%s]Acc %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb_str, avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']))
                         logger.info('[%s]TAR %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']))
-                        logger.info('[%s]FAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
+                        logger.info('[%s]FAR %s: %1.5f+-%1.5f'     % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
 
                 # print('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
                 logger.info('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
