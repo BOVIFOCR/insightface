@@ -460,9 +460,10 @@ def fuse_scores(score1, score2):
 
 
 def get_races_combinations(races_list):
-    # races_comb = [list(r) for r in set(tuple(race_comb) for race_comb in races_list)]
-    races_comb = [tuple(r) for r in set(tuple(race_comb) for race_comb in races_list)]
+    # races_comb = [tuple(r) for r in set(tuple(race_comb) for race_comb in races_list)]
+    races_comb = [tuple(r) for r in set(tuple(sorted(race_comb)) for race_comb in races_list)]
     # print('races_comb:', races_comb)
+    # print('len(races_comb):', len(races_comb))
     return races_comb
 
 
@@ -1210,12 +1211,13 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
         thresholds = np.flipud(thresholds)
     embeddings1 = embeddings[0::2]
     embeddings2 = embeddings[1::2]
-    print('Doing ROC analysis...')
+    races_list_sorted = np.array([sorted(races_pair) for races_pair in races_list])
+
     tpr, fpr, accuracy, avg_roc_metrics = calculate_roc_analyze_races(args, thresholds,
                                                 embeddings1,
                                                 embeddings2,
                                                 np.asarray(actual_issame),
-                                                races_list,
+                                                races_list_sorted,
                                                 subj_list,
                                                 nrof_folds=nrof_folds,
                                                 pca=pca,
@@ -1231,7 +1233,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                                 embeddings2,
                                                 np.asarray(actual_issame),
                                                 1e-3,
-                                                races_list,
+                                                races_list_sorted,
                                                 subj_list,
                                                 nrof_folds=nrof_folds,
                                                 races_combs=races_combs)
@@ -1246,7 +1248,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                                 embeddings2,
                                                 np.asarray(actual_issame),
                                                 fmr_targets,
-                                                races_list,
+                                                races_list_sorted,
                                                 subj_list,
                                                 nrof_folds=nrof_folds,
                                                 races_combs=races_combs)
@@ -1259,7 +1261,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                                 embeddings1,
                                                 embeddings2,
                                                 np.asarray(actual_issame),
-                                                races_list,
+                                                races_list_sorted,
                                                 subj_list,
                                                 races_combs=races_combs)
 
@@ -1271,7 +1273,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                                         embeddings1,
                                                         embeddings2,
                                                         np.asarray(actual_issame),
-                                                        races_list,
+                                                        races_list_sorted,
                                                         subj_list,
                                                         races_combs=races_combs)
 
@@ -1310,22 +1312,6 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
     subj_list                 = data_set['subj_list']                 if 'subj_list'                 in data_set else None
     samples_orig_paths_list   = data_set['samples_orig_paths_list']   if 'samples_orig_paths_list'   in data_set else None
     samples_update_paths_list = data_set['samples_update_paths_list'] if 'samples_update_paths_list' in data_set else None
-
-    # if name.lower() == 'bupt':
-    #     # races_list = data_set[2]
-    #     # subj_list = data_set[3]
-    #     races_list = data_set['races_list']
-    #     subj_list = data_set['subj_list']
-    # elif 'doppelver' in name.lower() or 'nd_twins' in name.lower() or '3d_tec' in name.lower():
-    #     races_list = None
-    #     subj_list = data_set[2]
-    #     samples_orig_paths_list = data_set[3]
-    #     samples_update_paths_list = data_set[4]
-    # else:
-    #     races_list, subj_list = None, None
-    #
-    # if 'races_list' in data_set:
-    #     races_list = data_set['races_list']
 
     os.makedirs(path_dir_model, exist_ok=True)
     # path_embeddings = os.path.join(path_dir_model, 'embeddings_list.pkl')
@@ -1745,16 +1731,27 @@ def load_facial_attributes(data_set, args):
     print()
 
     races_list   = [None] * len(corresp_facial_attribs)
-    genders_list = [None] * len(corresp_facial_attribs)
     ages_list    = [None] * len(corresp_facial_attribs)
+    genders_list = [None] * len(corresp_facial_attribs)
+    genders_bool = {'Yes': 'Male', 'No': 'Female'}
     for idx_pair, pair_facial_attribs in enumerate(corresp_facial_attribs):
-        races_list[idx_pair]   = [pair_facial_attribs[0]['race']['dominant_race'], pair_facial_attribs[1]['race']['dominant_race']]
-        genders_list[idx_pair] = [pair_facial_attribs[0]['gender'], pair_facial_attribs[1]['gender']]
-        ages_list[idx_pair]    = [pair_facial_attribs[0]['age'],    pair_facial_attribs[1]['age']]
+        races_list[idx_pair]   = [pair_facial_attribs[0]['race']['dominant_race'],          pair_facial_attribs[1]['race']['dominant_race']]
+        ages_list[idx_pair]    = [pair_facial_attribs[0]['age'],                            pair_facial_attribs[1]['age']]
+        genders_list[idx_pair] = [genders_bool[pair_facial_attribs[0]['attrDict']['Male']], genders_bool[pair_facial_attribs[1]['attrDict']['Male']]]
 
     data_set['races_list']   = np.array(races_list)
-    data_set['genders_list'] = np.array(genders_list)
     data_set['ages_list']    = np.array(ages_list)
+    data_set['genders_list'] = np.array(genders_list)
+    
+    # # TEST
+    # perc_pairs_same_race   = np.sum(np.array([True if race_pair[0]  ==race_pair[1]   else False for race_pair   in races_list]))   / len(races_list)
+    # perc_pairs_same_gender = np.sum(np.array([True if gender_pair[0]==gender_pair[1] else False for gender_pair in genders_list])) / len(genders_list)
+    # perc_pairs_same_age    = np.sum(np.array([True if age_pair[0]   ==age_pair[1]    else False for age_pair    in ages_list]))    / len(ages_list)
+    # print('perc_pairs_same_race:', perc_pairs_same_race)
+    # print('perc_pairs_same_gender:', perc_pairs_same_gender)
+    # print('perc_pairs_same_age:', perc_pairs_same_age)
+    # raise Exception()
+
     return data_set
 
 
@@ -1885,12 +1882,13 @@ if __name__ == '__main__':
 
                 # # TEST
                 # print('-----------------')
-                # for idx_pair, (pair_update_path, pair_race) in enumerate(zip(data_set['samples_update_paths_list'], data_set['races_list'])):
+                # for idx_pair, (pair_update_path, pair_race, pair_gender) in enumerate(zip(data_set['samples_update_paths_list'], data_set['races_list'], data_set['genders_list'])):
                 #     print(f'idx_pair: {idx_pair}')
                 #     print(f'pair_update_path: {pair_update_path}')
                 #     print(f'pair_race: {pair_race}')
+                #     print(f'pair_gender: {pair_gender}')
                 #     print('-----------------')
-                # sys.exit(0)
+                # raise Exception()
 
 
             ver_list.append(data_set)
