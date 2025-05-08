@@ -459,16 +459,7 @@ def fuse_scores(score1, score2):
     return fused
 
 
-def get_races_combinations():
-    # races = ['African', 'Asian', 'Caucasian', 'Indian']
-    races = ['Asian', 'Indian', 'African', 'Caucasian']
-    races_comb = [(race, race) for race in races]
-    # races_comb += list(itertools.combinations(races, 2))
-    # return sorted(races_comb)
-    return races_comb
-
-
-def get_races_combinations2(races_list):
+def get_races_combinations(races_list):
     # races_comb = [list(r) for r in set(tuple(race_comb) for race_comb in races_list)]
     races_comb = [tuple(r) for r in set(tuple(race_comb) for race_comb in races_list)]
     # print('races_comb:', races_comb)
@@ -1758,7 +1749,6 @@ def load_facial_attributes(data_set, args):
     ages_list    = [None] * len(corresp_facial_attribs)
     for idx_pair, pair_facial_attribs in enumerate(corresp_facial_attribs):
         races_list[idx_pair]   = [pair_facial_attribs[0]['race']['dominant_race'], pair_facial_attribs[1]['race']['dominant_race']]
-        # print(f'races_list[{idx_pair}]:', races_list[idx_pair])
         genders_list[idx_pair] = [pair_facial_attribs[0]['gender'], pair_facial_attribs[1]['gender']]
         ages_list[idx_pair]    = [pair_facial_attribs[0]['age'],    pair_facial_attribs[1]['age']]
 
@@ -1855,10 +1845,6 @@ if __name__ == '__main__':
                     print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
                     data_set = read_object_from_file(path_unified_dataset)
 
-                print('Flipping images...')
-                if type(data_set['data_list']) is list and data_set['data_list'][1] == None:
-                    data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
-
             elif name.lower() == '3d_tec':
                 # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
                 protocol_file_name = args.protocol.split('/')[-1].split('.')[0]
@@ -1872,10 +1858,6 @@ if __name__ == '__main__':
                 else:
                     print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
                     data_set = read_object_from_file(path_unified_dataset)
-
-                print('Flipping images...')
-                if type(data_set[0]) is list and data_set['data_list'][1] == None:
-                    data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
 
             elif name.lower() == 'nd_twins':
                 # raise Exception(f'Evaluation for dataset \'{name.lower()}\' is under construction')
@@ -1891,13 +1873,12 @@ if __name__ == '__main__':
                     print(f'Loading dataset from file \'{path_unified_dataset}\' ...')
                     data_set = read_object_from_file(path_unified_dataset)
 
-                print('Flipping images...')
-                if type(data_set[0]) is list and data_set['data_list'][1] == None:
-                    data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
-
             else:
                 raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
 
+            if type(data_set['data_list']) is list and data_set['data_list'][1] == None:
+                print('Flipping images...')
+                data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
 
             if args.facial_attributes != '':
                 data_set = load_facial_attributes(data_set, args)
@@ -1970,12 +1951,9 @@ if __name__ == '__main__':
             results = []
             for model in nets:
 
-                # if name.lower() == 'bupt':
-                #     races_combs = get_races_combinations()
-                # else:
-                #     races_combs = None
+                races_combs = None
                 if 'races_list' in data_set:
-                    races_combs = get_races_combinations2(data_set['races_list'])
+                    races_combs = get_races_combinations(data_set['races_list'])
                 
                 path_dir_model = os.path.join(os.path.dirname(args.model), f'eval_{name.lower()}')
                 
@@ -2064,7 +2042,6 @@ if __name__ == '__main__':
                                                                                                       test_races_styles_clusters_count_norm,
                                                                                                       avg_roc_metrics,
                                                                                                       args)
-
 
 
             # print('Max of [%s] is %1.5f' % (ver_name_list[i], np.max(results)))
