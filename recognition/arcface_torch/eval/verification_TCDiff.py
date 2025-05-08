@@ -459,12 +459,12 @@ def fuse_scores(score1, score2):
     return fused
 
 
-def get_races_combinations(races_list):
-    # races_comb = [tuple(r) for r in set(tuple(race_comb) for race_comb in races_list)]
-    races_comb = [tuple(r) for r in set(tuple(sorted(race_comb)) for race_comb in races_list)]
-    # print('races_comb:', races_comb)
-    # print('len(races_comb):', len(races_comb))
-    return races_comb
+def get_attrib_combinations(attribs_list):
+    attribs_comb = [tuple(r) for r in set(tuple(attrib_comb) for attrib_comb in attribs_list)]
+    # attribs_comb = [tuple(r) for r in set(tuple(sorted(attrib_comb)) for attrib_comb in attribs_list)]
+    print('attribs_comb:', attribs_comb)
+    print('len(attribs_comb):', len(attribs_comb))
+    return attribs_comb
 
 
 def get_avg_roc_metrics_races(metrics_races=[{}], races_combs=[]):
@@ -1951,7 +1951,11 @@ if __name__ == '__main__':
 
                 races_combs = None
                 if 'races_list' in data_set:
-                    races_combs = get_races_combinations(data_set['races_list'])
+                    races_combs = get_attrib_combinations(data_set['races_list'])
+                
+                genders_combs = None
+                if 'genders_list' in data_set:
+                    genders_combs = get_attrib_combinations(data_set['genders_list'])
                 
                 path_dir_model = os.path.join(os.path.dirname(args.model), f'eval_{name.lower()}')
                 
