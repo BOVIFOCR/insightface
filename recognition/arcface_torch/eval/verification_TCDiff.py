@@ -1977,18 +1977,15 @@ if __name__ == '__main__':
 
                 logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
 
-                # print('avg_roc_metrics:', avg_roc_metrics)
-                # print('avg_val_metrics:', avg_val_metrics)
-                # sys.exit(0)
-
                 if not races_combs is None:
                     for race_comb in races_combs:
                         race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
-                        # print('[%s]Acc %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']), end='    ')
-                        # print('[%s]TAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']), end='    ')
-                        # print('[%s]FAR %s: %1.5f+-%1.5f' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
                         logger.info('[%s]Acc %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb_str, avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']))
+                    for race_comb in races_combs:
+                        race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
                         logger.info('[%s]TAR %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']))
+                    for race_comb in races_combs:
+                        race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
                         logger.info('[%s]FAR %s: %1.5f+-%1.5f'     % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
 
                 # print('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
