@@ -460,8 +460,8 @@ def fuse_scores(score1, score2):
 
 
 def get_attrib_combinations(attribs_list):
-    attribs_comb = [tuple(r) for r in set(tuple(attrib_comb) for attrib_comb in attribs_list)]
-    # attribs_comb = [tuple(r) for r in set(tuple(sorted(attrib_comb)) for attrib_comb in attribs_list)]
+    # attribs_comb = [tuple(r) for r in set(tuple(attrib_comb) for attrib_comb in attribs_list)]
+    attribs_comb = [tuple(r) for r in set(tuple(sorted(attrib_comb)) for attrib_comb in attribs_list)]
     print('attribs_comb:', attribs_comb)
     print('len(attribs_comb):', len(attribs_comb))
     return attribs_comb
