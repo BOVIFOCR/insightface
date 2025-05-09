@@ -926,7 +926,9 @@ def calculate_val_far_analyze_races(args, threshold, dist, actual_issame, races_
             metrics_races[race_comb] = {}
 
         for i, race_comb in enumerate(races_combs):
-            indices_race_comb = np.where(np.all(races_list == race_comb, axis=1))[0]
+            # indices_race_comb = np.where(np.all(races_list == race_comb, axis=1))[0]
+            indices_race_comb = np.where(np.isin(races_list[:,0], race_comb) | np.isin(races_list[:,1], race_comb))[0]
+
             metrics_races[race_comb]['true_accept'] = np.sum(np.logical_and(predict_issame[indices_race_comb], actual_issame[indices_race_comb]))
             metrics_races[race_comb]['false_accept'] = np.sum(np.logical_and(predict_issame[indices_race_comb], np.logical_not(actual_issame[indices_race_comb])))
             metrics_races[race_comb]['n_same'] = np.sum(actual_issame[indices_race_comb])
