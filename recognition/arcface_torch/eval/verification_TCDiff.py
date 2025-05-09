@@ -540,11 +540,10 @@ def calculate_roc_analyze_races(args, thresholds,
                   embeddings1,
                   embeddings2,
                   actual_issame,
-                  races_list,
-                  subj_list,
+                  face_attribs_dict,
                   nrof_folds=10,
                   pca=0,
-                  races_combs=[],
+                  face_attribs_combs={},
                   style_clusters_data={}):
     assert (embeddings1.shape[0] == embeddings2.shape[0])
     assert (embeddings1.shape[1] == embeddings2.shape[1])
@@ -556,7 +555,9 @@ def calculate_roc_analyze_races(args, thresholds,
     fprs = np.zeros((nrof_folds, nrof_thresholds))
     accuracy = np.zeros((nrof_folds))
     indices = np.arange(nrof_pairs)
-    metrics_races = [None] * nrof_folds
+    # metrics_races = [None] * nrof_folds
+    metrics_face_attribs = {k: [None] * nrof_folds for k in face_attribs_dict}
+    avg_roc_metrics = {k:None for k in face_attribs_dict}
     metrics_style_clusters = [None] * nrof_folds
 
     if pca == 0:
@@ -564,7 +565,6 @@ def calculate_roc_analyze_races(args, thresholds,
         # dist = np.sum(np.square(diff), 1)
         # dist = cosine_dist(embeddings1, embeddings2)
         dist = compute_score(embeddings1, embeddings2, args.score)
-        
 
     # Bernardo
     dist_fusion = None
@@ -607,25 +607,31 @@ def calculate_roc_analyze_races(args, thresholds,
             tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy_analyze_races(
                 args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=None, style_clusters_data=None)
         
-        if not races_list is None:
-            _, _, accuracy[fold_idx], metrics_races[fold_idx], _ = calculate_accuracy_analyze_races(
-                args, thresholds[best_threshold_index], dist[test_set],
-                actual_issame[test_set], races_list[test_set], subj_list=None, races_combs=races_combs, style_clusters_data=None)
 
-            if not style_clusters_data is None:
-                _, _, accuracy[fold_idx], metrics_races[fold_idx], _ = calculate_accuracy_analyze_races(
+        for attrib_key in face_attribs_dict:
+            face_attrib_list, face_attrib_comb = face_attribs_dict[attrib_key], face_attribs_combs[attrib_key]
+
+            if not face_attrib_list is None:
+                _, _, accuracy[fold_idx], metrics_face_attribs[attrib_key][fold_idx], _ = calculate_accuracy_analyze_races(
                     args, thresholds[best_threshold_index], dist[test_set],
-                    actual_issame[test_set], races_list[test_set], subj_list=None, races_combs=races_combs, style_clusters_data=style_clusters_data)
+                    actual_issame[test_set], face_attrib_list[test_set], subj_list=None, races_combs=face_attrib_comb, style_clusters_data=None)
 
-        else:
-            _, _, accuracy[fold_idx], _ = calculate_accuracy_analyze_races(
-                args, thresholds[best_threshold_index], dist[test_set],
-                actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs, style_clusters_data=None)
+                if not style_clusters_data is None:
+                    _, _, accuracy[fold_idx], metrics_face_attribs[attrib_key][fold_idx], _ = calculate_accuracy_analyze_races(
+                        args, thresholds[best_threshold_index], dist[test_set],
+                        actual_issame[test_set], face_attrib_list[test_set], subj_list=None, races_combs=face_attrib_comb, style_clusters_data=style_clusters_data)
 
-    avg_roc_metrics = None
-    if not races_list is None:
-        avg_roc_metrics = get_avg_roc_metrics_races(metrics_races, races_combs)
-    
+            else:
+                _, _, accuracy[fold_idx], _ = calculate_accuracy_analyze_races(
+                    args, thresholds[best_threshold_index], dist[test_set],
+                    actual_issame[test_set], face_attrib_list=None, subj_list=None, races_combs=face_attrib_comb, style_clusters_data=None)
+
+    # avg_roc_metrics = None
+    for attrib_key in face_attribs_dict:
+        face_attrib_list, face_attrib_comb = face_attribs_dict[attrib_key], face_attribs_combs[attrib_key]
+        if not face_attrib_list is None:
+            avg_roc_metrics[attrib_key] = get_avg_roc_metrics_races(metrics_face_attribs[attrib_key], face_attrib_comb)
+
     tpr = np.mean(tprs, 0)
     fpr = np.mean(fprs, 0)
     return tpr, fpr, accuracy, avg_roc_metrics
@@ -1212,25 +1218,23 @@ def save_best_and_worst_pairs(args, path_dir_model, thresholds,
     # sys.exit(0)
 
 
-
-def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, races_list, subj_list, nrof_folds=10, pca=0, races_combs=[], imgs=[], style_clusters_data={}):
+def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, face_attribs_dict, nrof_folds=10, pca=0, face_attribs_combs={}, imgs=[], style_clusters_data={}):
     # Calculate evaluation metrics
     thresholds = np.arange(0, 4, 0.01)
     if args.score == 'cos-sim':
         thresholds = np.flipud(thresholds)
     embeddings1 = embeddings[0::2]
     embeddings2 = embeddings[1::2]
-    races_list_sorted = np.array([sorted(races_pair) for races_pair in races_list])
+    races_list_sorted = np.array([sorted(races_pair) for races_pair in face_attribs_dict['race']])
 
     tpr, fpr, accuracy, avg_roc_metrics = calculate_roc_analyze_races(args, thresholds,
                                                 embeddings1,
                                                 embeddings2,
                                                 np.asarray(actual_issame),
-                                                races_list_sorted,
-                                                subj_list,
+                                                face_attribs_dict,
                                                 nrof_folds=nrof_folds,
                                                 pca=pca,
-                                                races_combs=races_combs,
+                                                face_attribs_combs=face_attribs_combs,
                                                 style_clusters_data=style_clusters_data)
 
     thresholds = np.arange(0, 4, 0.001)
@@ -1243,7 +1247,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                                 np.asarray(actual_issame),
                                                 1e-3,
                                                 races_list_sorted,
-                                                subj_list,
+                                                subj_list=None,
                                                 nrof_folds=nrof_folds,
                                                 races_combs=races_combs)
 
@@ -1258,7 +1262,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                                 np.asarray(actual_issame),
                                                 fmr_targets,
                                                 races_list_sorted,
-                                                subj_list,
+                                                subj_list=None,
                                                 nrof_folds=nrof_folds,
                                                 races_combs=races_combs)
     
@@ -1271,7 +1275,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                                 embeddings2,
                                                 np.asarray(actual_issame),
                                                 races_list_sorted,
-                                                subj_list,
+                                                subj_list=None,
                                                 races_combs=races_combs)
 
     acc_at_thresh = None
@@ -1283,7 +1287,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                                         embeddings2,
                                                         np.asarray(actual_issame),
                                                         races_list_sorted,
-                                                        subj_list,
+                                                        subj_list=None,
                                                         races_combs=races_combs)
 
         file_scores_labels = args.model.split('/')[-1].split('.')[0] + '_target=' + args.target.split('/')[-1].split('.')[0] + f'_frcsyn_scores_labels_thresh={one_threshold}.txt'
@@ -1298,8 +1302,8 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
                                   embeddings1,
                                   embeddings2,
                                   np.asarray(actual_issame),
-                                  races_list,
-                                  subj_list,
+                                  races_list_sorted,
+                                  subj_list=None,
                                   nrof_folds=nrof_folds,
                                   pca=pca,
                                   races_combs=races_combs,
@@ -1312,7 +1316,7 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, race
 
 
 @torch.no_grad()
-def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_size, nfolds=10, races_combs=[], style_clusters_data={}):
+def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_size, nfolds=10, face_attribs_combs={}, style_clusters_data={}):
     # data_list = data_set[0]
     # issame_list = data_set[1]
     data_list                 = data_set['data_list']                 if 'data_list'                 in data_set else None
@@ -1323,6 +1327,9 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
     subj_list                 = data_set['subj_list']                 if 'subj_list'                 in data_set else None
     samples_orig_paths_list   = data_set['samples_orig_paths_list']   if 'samples_orig_paths_list'   in data_set else None
     samples_update_paths_list = data_set['samples_update_paths_list'] if 'samples_update_paths_list' in data_set else None
+    face_attribs_dict = {'race': races_list,
+                         'gender': genders_list,
+                         'age': ages_list}
 
     os.makedirs(path_dir_model, exist_ok=True)
     # path_embeddings = os.path.join(path_dir_model, 'embeddings_list.pkl')
@@ -1399,7 +1406,7 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
     print('\nDoing races test evaluation...')
     # _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
     _, _, accuracy, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean, \
-        avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, path_dir_model, embeddings, issame_list, races_list, subj_list, nrof_folds=nfolds, races_combs=races_combs, imgs=data_list[0], style_clusters_data=style_clusters_data)
+        avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh = evaluate_analyze_races(args, path_dir_model, embeddings, issame_list, face_attribs_dict, nrof_folds=nfolds, face_attribs_combs=face_attribs_combs, imgs=data_list[0], style_clusters_data=style_clusters_data)
     acc2, std2 = np.mean(accuracy), np.std(accuracy)
     return acc1, std1, acc2, std2, _xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean, \
         avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh
@@ -1967,6 +1974,9 @@ if __name__ == '__main__':
                     genders_combs = get_attrib_combinations(data_set['genders_list'])
                 if 'ages_list' in data_set:
                     ages_combs = get_attrib_combinations(data_set['ages_list'])
+                face_attribs_combs = {'race':   races_combs,
+                                      'gender': genders_combs,
+                                      'age':    ages_combs}
 
                 path_dir_model = os.path.join(os.path.dirname(args.model), f'eval_{name.lower()}')
 
@@ -1976,7 +1986,7 @@ if __name__ == '__main__':
                 logger = init_logger(path_log_results_file)
 
                 acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean, \
-                    avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, name.lower(), path_dir_model, ver_list[i], model, args.batch_size, args.nfolds, races_combs, test_style_clusters_data)
+                    avg_roc_metrics, avg_val_metrics, best_acc, best_thresh, acc_at_thresh = test_analyze_races(args, name.lower(), path_dir_model, ver_list[i], model, args.batch_size, args.nfolds, face_attribs_combs, test_style_clusters_data)
                 results.append(acc2)
 
                 # print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
@@ -1992,10 +2002,12 @@ if __name__ == '__main__':
 
                 logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
 
+                for attrib in face_attribs_combs:
+                    for race_comb in face_attribs_combs[attrib]:
+                        logger.info('[%s][%s]Acc %s: %1.5f+-%1.5f    ' % (attrib, ver_name_list[i], race_comb[:5], avg_roc_metrics[attrib][race_comb]['acc_mean'], avg_roc_metrics[attrib][race_comb]['acc_std']))
                 if not races_combs is None:
-                    for race_comb in races_combs:
-                        # race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
-                        logger.info('[%s]Acc %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb[:5], avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']))
+                    # for race_comb in races_combs:
+                    #     logger.info('[%s]Acc %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb[:5], avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']))
                     for race_comb in races_combs:
                         logger.info('[%s]TAR %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb[:5], avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']))
                     for race_comb in races_combs:
