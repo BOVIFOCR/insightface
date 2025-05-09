@@ -58,6 +58,7 @@ import datetime
 import os, sys
 import pickle
 import glob
+import re
 
 import torch
 import mxnet as mx
@@ -165,6 +166,12 @@ def save_img(pathfile, img):
     img = img.squeeze(0).permute(1, 2, 0).byte().numpy()
     pil_img = Image.fromarray(img)
     pil_img.save(pathfile, format="PNG")
+
+
+def natural_sort(string_list):
+    def natural_sort_key(s):
+        return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+    return sorted(string_list, key=natural_sort_key)
 
 
 class LFold:
@@ -461,9 +468,8 @@ def fuse_scores(score1, score2):
 
 def get_attrib_combinations(attribs_list):
     # attribs_comb = [tuple(r) for r in set(tuple(attrib_comb) for attrib_comb in attribs_list)]
-    attribs_comb = [tuple(r) for r in set(tuple(sorted(attrib_comb)) for attrib_comb in attribs_list)]
-    print('attribs_comb:', attribs_comb)
-    print('len(attribs_comb):', len(attribs_comb))
+    # attribs_comb = [tuple(r) for r in set(tuple(sorted(attrib_comb)) for attrib_comb in attribs_list)]
+    attribs_comb = np.array(natural_sort(list(set([attrib for attrib in attribs_list.flatten()]))))
     return attribs_comb
 
 
@@ -649,7 +655,8 @@ def calculate_accuracy_analyze_races(args, threshold, dist, actual_issame, races
             metrics_races[race_comb] = {}
 
         for i, race_comb in enumerate(races_combs):
-            indices_race_comb = np.where(np.all(races_list == race_comb, axis=1))[0]
+            # indices_race_comb = np.where(np.all(races_list == race_comb, axis=1))[0]
+            indices_race_comb = np.where(np.isin(races_list[:,0], race_comb) | np.isin(races_list[:,1], race_comb))[0]
 
             logical_tp = np.logical_and(predict_issame[indices_race_comb], actual_issame[indices_race_comb])
             logical_fp = np.logical_and(predict_issame[indices_race_comb], np.logical_not(actual_issame[indices_race_comb]))
@@ -1309,6 +1316,8 @@ def test_analyze_races(args, name, path_dir_model, data_set, backbone, batch_siz
     data_list                 = data_set['data_list']                 if 'data_list'                 in data_set else None
     issame_list               = data_set['issame_list']               if 'issame_list'               in data_set else None
     races_list                = data_set['races_list']                if 'races_list'                in data_set else None
+    genders_list              = data_set['genders_list']              if 'genders_list'              in data_set else None
+    ages_list                 = data_set['ages_list']                 if 'ages_list'                 in data_set else None
     subj_list                 = data_set['subj_list']                 if 'subj_list'                 in data_set else None
     samples_orig_paths_list   = data_set['samples_orig_paths_list']   if 'samples_orig_paths_list'   in data_set else None
     samples_update_paths_list = data_set['samples_update_paths_list'] if 'samples_update_paths_list' in data_set else None
@@ -1949,16 +1958,16 @@ if __name__ == '__main__':
             results = []
             for model in nets:
 
-                races_combs = None
+                races_combs, genders_combs, ages_combs = None, None, None
                 if 'races_list' in data_set:
                     races_combs = get_attrib_combinations(data_set['races_list'])
-                
-                genders_combs = None
                 if 'genders_list' in data_set:
                     genders_combs = get_attrib_combinations(data_set['genders_list'])
-                
+                if 'ages_list' in data_set:
+                    ages_combs = get_attrib_combinations(data_set['ages_list'])
+
                 path_dir_model = os.path.join(os.path.dirname(args.model), f'eval_{name.lower()}')
-                
+
                 path_log_results_file = os.path.join(path_dir_model, 'results_logs')
                 if args.protocol != '': path_log_results_file += f'_prot={os.path.basename(args.protocol)}'
                 path_log_results_file += '.txt'
@@ -1983,14 +1992,12 @@ if __name__ == '__main__':
 
                 if not races_combs is None:
                     for race_comb in races_combs:
-                        race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
-                        logger.info('[%s]Acc %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb_str, avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']))
+                        # race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
+                        logger.info('[%s]Acc %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb[:5], avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']))
                     for race_comb in races_combs:
-                        race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
-                        logger.info('[%s]TAR %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']))
+                        logger.info('[%s]TAR %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb[:5], avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']))
                     for race_comb in races_combs:
-                        race_comb_str = str((race_comb[0][:5], race_comb[1][:5]))
-                        logger.info('[%s]FAR %s: %1.5f+-%1.5f'     % (ver_name_list[i], race_comb_str, avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
+                        logger.info('[%s]FAR %s: %1.5f+-%1.5f'     % (ver_name_list[i], race_comb[:5], avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
 
                 # print('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
                 logger.info('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
