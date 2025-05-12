@@ -847,16 +847,14 @@ def get_fnmr_fmr_analyze_races(args, threshold, dist, actual_issame, races_list,
     return fnmr, fmr
 
 
-
 def calculate_val_analyze_races(args, thresholds,
                   embeddings1,
                   embeddings2,
                   actual_issame,
                   far_target,
-                  races_list,
-                  subj_list,
+                  face_attribs_dict,
                   nrof_folds=10,
-                  races_combs=[]):
+                  face_attribs_combs=[]):
     assert (embeddings1.shape[0] == embeddings2.shape[0])
     assert (embeddings1.shape[1] == embeddings2.shape[1])
     nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
@@ -872,7 +870,10 @@ def calculate_val_analyze_races(args, thresholds,
     dist = compute_score(embeddings1, embeddings2, args.score)
 
     indices = np.arange(nrof_pairs)
-    metrics_races = [None] * nrof_folds
+    # metrics_races = [None] * nrof_folds
+    metrics_face_attribs = {k: [None] * nrof_folds for k in face_attribs_dict}
+    avg_val_metrics = {k:None for k in face_attribs_dict}
+    metrics_style_clusters = [None] * nrof_folds
 
     # Bernardo
     dist_fusion = None
@@ -895,16 +896,22 @@ def calculate_val_analyze_races(args, thresholds,
         else:
             threshold = 0.0
 
-        if not races_list is None:
-            val[fold_idx], far[fold_idx], metrics_races[fold_idx] = calculate_val_far_analyze_races(
-                args, threshold, dist[test_set], actual_issame[test_set], races_list[test_set], subj_list=None, races_combs=races_combs)
-        else:
-            val[fold_idx], far[fold_idx] = calculate_val_far_analyze_races(
-                args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=races_combs)
 
-    avg_val_metrics = None
-    if not races_list is None:
-        avg_val_metrics = get_avg_val_metrics_races(metrics_races, races_combs)
+        for attrib_key in face_attribs_dict:
+            face_attrib_list, face_attrib_comb = face_attribs_dict[attrib_key], face_attribs_combs[attrib_key]
+
+            if not face_attrib_list is None:
+                val[fold_idx], far[fold_idx], metrics_face_attribs[attrib_key][fold_idx] = calculate_val_far_analyze_races(
+                    args, threshold, dist[test_set], actual_issame[test_set], face_attrib_list[test_set], subj_list=None, races_combs=face_attrib_comb)
+            else:
+                val[fold_idx], far[fold_idx] = calculate_val_far_analyze_races(
+                    args, threshold, dist[test_set], actual_issame[test_set], races_list=None, subj_list=None, races_combs=face_attrib_comb)
+
+    # avg_val_metrics = None
+    for attrib_key in face_attribs_dict:
+        face_attrib_list, face_attrib_comb = face_attribs_dict[attrib_key], face_attribs_combs[attrib_key]
+        if not face_attrib_list is None:
+            avg_val_metrics[attrib_key] = get_avg_val_metrics_races(metrics_face_attribs[attrib_key], face_attrib_comb)
 
     val_mean = np.mean(val)
     far_mean = np.mean(far)
@@ -1246,10 +1253,9 @@ def evaluate_analyze_races(args, path_dir_model, embeddings, actual_issame, face
                                                 embeddings2,
                                                 np.asarray(actual_issame),
                                                 1e-3,
-                                                races_list_sorted,
-                                                subj_list=None,
+                                                face_attribs_dict,
                                                 nrof_folds=nrof_folds,
-                                                races_combs=races_combs)
+                                                face_attribs_combs=face_attribs_combs)
 
     thresholds = np.arange(0, 4, 0.0001)
     if args.score == 'cos-sim':
@@ -1994,32 +2000,28 @@ if __name__ == '__main__':
                 # print('[%s]TAR: %1.5f+-%1.5f    FAR: %1.5f' % (ver_name_list[i], val, val_std, far))
                 logger.info('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
                 logger.info('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
-                logger.info('[%s]TAR: %1.5f+-%1.5f    FAR: %1.5f' % (ver_name_list[i], val, val_std, far))
-
-                for fmr_target in list(fnmr_mean.keys()):
-                    # print('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
-                    logger.info('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
-
-                logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
-
-                for attrib in face_attribs_combs:
-                    for race_comb in face_attribs_combs[attrib]:
-                        logger.info('[%s][%s]Acc %s: %1.5f+-%1.5f    ' % (attrib, ver_name_list[i], race_comb[:5], avg_roc_metrics[attrib][race_comb]['acc_mean'], avg_roc_metrics[attrib][race_comb]['acc_std']))
-                if not races_combs is None:
-                    # for race_comb in races_combs:
-                    #     logger.info('[%s]Acc %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb[:5], avg_roc_metrics[race_comb]['acc_mean'], avg_roc_metrics[race_comb]['acc_std']))
-                    for race_comb in races_combs:
-                        logger.info('[%s]TAR %s: %1.5f+-%1.5f    ' % (ver_name_list[i], race_comb[:5], avg_val_metrics[race_comb]['val_mean'], avg_val_metrics[race_comb]['val_std']))
-                    for race_comb in races_combs:
-                        logger.info('[%s]FAR %s: %1.5f+-%1.5f'     % (ver_name_list[i], race_comb[:5], avg_val_metrics[race_comb]['far_mean'], avg_val_metrics[race_comb]['far_std']))
-
                 # print('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
                 logger.info('[%s]Best Acc: %1.5f    @best_thresh: %1.5f' % (ver_name_list[i], best_acc, best_thresh))
                 if not acc_at_thresh is None:
                     # print('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
                     logger.info('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
+                logger.info('[%s]TAR: %1.5f+-%1.5f    @FAR: %1.5f' % (ver_name_list[i], val, val_std, far))
 
+                for fmr_target in list(fnmr_mean.keys()):
+                    # print('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
+                    logger.info('[%s]FNMR: %1.5f+-%1.5f   @FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
 
+                logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
+
+                for attrib in face_attribs_combs:
+                    print('------')
+                    for race_comb in face_attribs_combs[attrib]:
+                        logger.info('[%s][%s]Acc %s: %1.5f+-%1.5f    [%s]TAR %s: %1.5f+-%1.5f    [%s]FAR %s: %1.5f+-%1.5f' % \
+                                    (ver_name_list[i], attrib, race_comb[:5], avg_roc_metrics[attrib][race_comb]['acc_mean'], avg_roc_metrics[attrib][race_comb]['acc_std'], \
+                                                       attrib, race_comb[:5], avg_val_metrics[attrib][race_comb]['val_mean'], avg_val_metrics[attrib][race_comb]['val_std'], \
+                                                       attrib, race_comb[:5], avg_val_metrics[attrib][race_comb]['far_mean'], avg_val_metrics[attrib][race_comb]['far_std']))
+                    
+                
                 if not test_style_clusters_data is None:
                     print('Computing distributions statiscs...')
                     for idx_race, race in enumerate(list(avg_roc_metrics.keys())):
