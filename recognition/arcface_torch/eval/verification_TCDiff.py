@@ -2015,7 +2015,7 @@ if __name__ == '__main__':
                 logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
 
                 for attrib in face_attribs_combs:
-                    print('------')
+                    logger.info('------')
                     for race_comb in face_attribs_combs[attrib]:
                         logger.info('[%s][%s]Acc %s: %1.5f+-%1.5f    [%s]TAR %s: %1.5f+-%1.5f    [%s]FAR %s: %1.5f+-%1.5f' % \
                                     (ver_name_list[i], attrib, race_comb[:5], avg_roc_metrics[attrib][race_comb]['acc_mean'], avg_roc_metrics[attrib][race_comb]['acc_std'], \
