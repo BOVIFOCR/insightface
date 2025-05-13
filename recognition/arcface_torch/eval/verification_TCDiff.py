@@ -1989,6 +1989,7 @@ if __name__ == '__main__':
                 path_log_results_file = os.path.join(path_dir_model, 'results_logs')
                 if args.protocol != '': path_log_results_file += f'_prot={os.path.basename(args.protocol)}'
                 path_log_results_file += '.txt'
+                print('\npath_log_results_file:', path_log_results_file)
                 logger = init_logger(path_log_results_file)
 
                 acc1, std1, acc2, std2, xnorm, embeddings_list, val, val_std, far, fnmr_mean, fnmr_std, fmr_mean, eer_mean, eer_threshold_mean, \
