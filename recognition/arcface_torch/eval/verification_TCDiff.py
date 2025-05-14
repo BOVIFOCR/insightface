@@ -2016,11 +2016,13 @@ if __name__ == '__main__':
 
                 for attrib in face_attribs_combs:
                     logger.info('------')
-                    for race_comb in face_attribs_combs[attrib]:
+                    for attrib_val in face_attribs_combs[attrib]:
+                        attrib_val_format = attrib_val
+                        # attrib_val_format = attrib_val[:5]
                         logger.info('[%s][%s]Acc %s: %1.5f+-%1.5f    [%s]TAR %s: %1.5f+-%1.5f    [%s]FAR %s: %1.5f+-%1.5f' % \
-                                    (ver_name_list[i], attrib, race_comb[:5], avg_roc_metrics[attrib][race_comb]['acc_mean'], avg_roc_metrics[attrib][race_comb]['acc_std'], \
-                                                       attrib, race_comb[:5], avg_val_metrics[attrib][race_comb]['val_mean'], avg_val_metrics[attrib][race_comb]['val_std'], \
-                                                       attrib, race_comb[:5], avg_val_metrics[attrib][race_comb]['far_mean'], avg_val_metrics[attrib][race_comb]['far_std']))
+                                    (ver_name_list[i], attrib, attrib_val_format, avg_roc_metrics[attrib][attrib_val]['acc_mean'], avg_roc_metrics[attrib][attrib_val]['acc_std'], \
+                                                       attrib, attrib_val_format, avg_val_metrics[attrib][attrib_val]['val_mean'], avg_val_metrics[attrib][attrib_val]['val_std'], \
+                                                       attrib, attrib_val_format, avg_val_metrics[attrib][attrib_val]['far_mean'], avg_val_metrics[attrib][attrib_val]['far_std']))
                     
                 
                 if not test_style_clusters_data is None:
