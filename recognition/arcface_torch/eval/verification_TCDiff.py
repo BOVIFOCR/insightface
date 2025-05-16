@@ -2006,11 +2006,11 @@ if __name__ == '__main__':
                 if not acc_at_thresh is None:
                     # print('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
                     logger.info('[%s]Accuracy: %1.5f    @thresh: %1.5f' % (ver_name_list[i], acc_at_thresh, args.save_scores_at_thresh))
-                logger.info('[%s]TAR: %1.5f+-%1.5f    @FAR: %1.5f' % (ver_name_list[i], val, val_std, far))
+                logger.info('[%s]TAR@FAR=%1.5f: %1.5f+-%1.5f' % (ver_name_list[i], far, val, val_std))
 
                 for fmr_target in list(fnmr_mean.keys()):
                     # print('[%s]FNMR: %1.5f+-%1.5f   FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
-                    logger.info('[%s]FNMR: %1.5f+-%1.5f   @FMR: %1.5f' % (ver_name_list[i], fnmr_mean[fmr_target], fnmr_std[fmr_target], fmr_target))
+                    logger.info('[%s]FNMR@FMR=%1.5f: %1.5f+-%1.5f' % (ver_name_list[i], fmr_target, fnmr_mean[fmr_target], fnmr_std[fmr_target]))
 
                 logger.info('[%s]EER: %1.5f    EER (thresh): %1.5f' % (ver_name_list[i], eer_mean, eer_threshold_mean))
 
@@ -2019,10 +2019,9 @@ if __name__ == '__main__':
                     for attrib_val in face_attribs_combs[attrib]:
                         attrib_val_format = attrib_val
                         # attrib_val_format = attrib_val[:5]
-                        logger.info('[%s][%s]Acc %s: %1.5f+-%1.5f    [%s]TAR %s: %1.5f+-%1.5f    [%s]FAR %s: %1.5f+-%1.5f' % \
+                        logger.info('[%s][%s]%s Acc: %1.5f+-%1.5f    [%s]%s TAR@FAR=%1.5f: %1.5f+-%1.5f' % \
                                     (ver_name_list[i], attrib, attrib_val_format, avg_roc_metrics[attrib][attrib_val]['acc_mean'], avg_roc_metrics[attrib][attrib_val]['acc_std'], \
-                                                       attrib, attrib_val_format, avg_val_metrics[attrib][attrib_val]['val_mean'], avg_val_metrics[attrib][attrib_val]['val_std'], \
-                                                       attrib, attrib_val_format, avg_val_metrics[attrib][attrib_val]['far_mean'], avg_val_metrics[attrib][attrib_val]['far_std']))
+                                                       attrib, attrib_val_format, avg_val_metrics[attrib][attrib_val]['far_mean'], avg_val_metrics[attrib][attrib_val]['val_mean'], avg_val_metrics[attrib][attrib_val]['val_std']))
                     
                 
                 if not test_style_clusters_data is None:
