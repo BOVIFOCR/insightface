@@ -21,8 +21,12 @@ def parse_args():
     return args
 
 
-def load_trained_model(network, path_weights):
+def load_trained_model(network, path_weights, device="cuda"):
     net = get_model(network, fp16=False)
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    net = net.to(device)
+    print('device:', next(net.parameters()).device)
+    # raise Exception()
     net.load_state_dict(torch.load(path_weights))
     net.eval()
     return net
@@ -48,29 +52,33 @@ def get_all_files_in_path(folder_path, file_extension=['.jpg','.jpeg','.png'], p
     return file_list
 
 
-def load_normalize_img(img):
+def load_normalize_img(img, device="cuda"):
     img = cv2.imread(img)
     img = cv2.resize(img, (112, 112))
 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = np.transpose(img, (2, 0, 1))
     img = torch.from_numpy(img).unsqueeze(0).float()
+    img = img.to(device)
     img.div_(255).sub_(0.5).div_(0.5)
     return img
 
 
 @torch.no_grad()
 def get_face_embedd(model, img):
-    embedd = model(img).numpy()
+    # embedd = model(img).numpy()
+    embedd = model(img).cpu().numpy()
     return embedd
 
 
 
 if __name__ == '__main__':
     args = parse_args()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print(f'Loading trained model ({args.network}): {args.weight}')
-    model = load_trained_model(args.network, args.weight)
+    model = load_trained_model(args.network, args.weight, device)
+    print()
 
     args.imgs = args.imgs.rstrip('/')
     if not args.output_path:
@@ -87,7 +95,7 @@ if __name__ == '__main__':
             start_time = time.time()
             print(f'{idx_path}/{len(imgs_paths)} - Computing face embedding')
             print(f'path_img: {path_img}')
-            img = load_normalize_img(path_img)
+            img = load_normalize_img(path_img, device)
 
             id_feat_img = get_face_embedd(model, img)
 
@@ -103,7 +111,7 @@ if __name__ == '__main__':
             if output_path_id_feat.endswith('.pt'):
                 torch.save(id_feat_img, output_path_id_feat)
             elif output_path_id_feat.endswith('.npy'):
-                
+                np.save(output_path_id_feat, id_feat_img)                
 
             elapsed_time = time.time()-start_time
             total_elapsed_time += elapsed_time
