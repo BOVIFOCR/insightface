@@ -120,7 +120,7 @@ torchvision==0.11.2
 # tqdm==4.62.3
 tqdm==4.66.3
 typing_extensions==4.5.0
-urllib3==1.26.12
+urllib3==2.5.0
 vtk==9.2.6
 wandb==0.14.2   # to be updated when wandb > 0.17.0 is released
 watchdog==3.0.0
