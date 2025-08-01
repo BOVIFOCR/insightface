@@ -76,7 +76,7 @@ psutil==5.9.5
 py-cpuinfo==9.0.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
-pydantic==1.10.7
+pydantic==1.10.13
 Pygments==2.15.1
 pymdown-extensions==9.11
 pyparsing==3.0.9
