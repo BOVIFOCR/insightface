@@ -1,5 +1,6 @@
 import os, sys
 import argparse
+import shutil
 import time
 import glob
 
@@ -9,6 +10,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input-path', type=str, default='/nobackup/unico/datasets/face_recognition/webface4m')
     parser.add_argument('--file-ext', type=str, default='.jpg')
+    parser.add_argument('--type', type=str, default='symbolic', choices=['symbolic', 'copy'])
     args = parser.parse_args()
     return args
 
@@ -41,7 +43,7 @@ def main(args):
     print('------')
 
     os.makedirs(output_path, exist_ok=True)
-    print(f'Making symbolic links at: \'{output_path}\'')
+    print(f'Organizing ({args.type}) files at: \'{output_path}\'')
     for idx_sample, sample_path in enumerate(samples_paths):
         subj_name = os.path.basename(sample_path).split('_')[0]
         print(f'Sample {idx_sample}/{len(samples_paths)} ({float(idx_sample)/float(len(samples_paths))*100.0:.1f}%) - Subj \'{subj_name}\'', end='\r')
@@ -51,7 +53,10 @@ def main(args):
         sample_output_path = os.path.join(subj_output_path, os.path.basename(sample_path))
         os.makedirs(subj_output_path, exist_ok=True)
         
-        os.symlink(sample_path, sample_output_path, target_is_directory=False)
+        if args.type == 'symbolic':
+            os.symlink(sample_path, sample_output_path, target_is_directory=False)
+        elif args.type == 'copy':
+            shutil.copy(sample_path, sample_output_path)
 
     print('\nFinished!\n')
 
