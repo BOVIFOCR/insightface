@@ -114,3 +114,6 @@ recognition/arcface_torch/work_dirs2/*
 
 recognition/arcface_torch/data/*
 
+*.csv
+
+
