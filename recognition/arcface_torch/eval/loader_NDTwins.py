@@ -273,10 +273,14 @@ class Loader_NDTwins:
         # sys.exit(0)
 
         data_list = []
-        for flip in [0, 1]:
+        # num_image_version = 2   # normal and flipped
+        num_image_version = 1     # only normal
+        for flip in range(num_image_version):
+            print(f'    {flip}/{num_image_version} - Allocating images tensor...')
             # data = torch.empty((len(pairs_update)*2, 3, image_size[0], image_size[1]))
             data = torch.zeros((len(pairs_update)*2, 3, image_size[0], image_size[1]))
             data_list.append(data)
+        print('    Done')
 
         issame_list               = np.array([bool(pairs_update[i]['pair_label']) for i in range(len(pairs_update))])
         subj_list                 = np.array([(pairs_update[i]['sample0_subj'], pairs_update[i]['sample1_subj']) for i in range(len(pairs_update))])
@@ -301,7 +305,7 @@ class Loader_NDTwins:
             if img.shape[1] != image_size[0]:
                 img = mx.image.resize_short(img, image_size[0])
             img = nd.transpose(img, axes=(2, 0, 1))
-            for flip in [0, 1]:
+            for flip in range(num_image_version):
                 if flip == 1:
                     img = mx.ndarray.flip(data=img, axis=2)
                 data_list[flip][idx][:] = torch.from_numpy(img.asnumpy())

@@ -1887,7 +1887,7 @@ if __name__ == '__main__':
                 if not os.path.exists(path_unified_dataset):
                     print(f'Loading individual images from folder \'{args.data_dir}\' ...')
                     data_set = Loader_NDTwins().load_dataset(args.protocol, args.data_dir, image_size, only_twins=True)
-                    data_set['data_list'][1] = None   # remove flipped images due its possible huge size
+                    if len(data_set['data_list']) > 1: data_set['data_list'][1] = None   # remove flipped images due its possible huge size
                     print(f'Saving dataset in file \'{path_unified_dataset}\' ...')
                     write_object_to_file(path_unified_dataset, data_set)
                 else:
@@ -1897,9 +1897,13 @@ if __name__ == '__main__':
             else:
                 raise Exception(f'Error, no \'.bin\' file found in \'{args.data_dir}\'')
 
-            if type(data_set['data_list']) is list and data_set['data_list'][1] == None:
-                print('Flipping images...')
-                data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
+            # if type(data_set['data_list']) is list and data_set['data_list'][1] == None:
+            if type(data_set['data_list']):
+                if len(data_set['data_list']) == 1:
+                    data_set['data_list'].append(None)
+                if data_set['data_list'][1] == None:
+                    print('Flipping images...')
+                    data_set['data_list'][1] = torch.flip(data_set['data_list'][0], dims=[3])
 
             if args.facial_attributes != '':
                 data_set = load_facial_attributes(data_set, args)
