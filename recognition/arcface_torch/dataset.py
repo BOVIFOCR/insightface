@@ -74,6 +74,10 @@ def get_dataloader(
                 print(f'Loading train dataset \'{root_dir}\' ...')
                 train_set = CASIAWebFace_loader(root_dir, transform)
 
+            elif 'ms1m'.lower() in root_dir.lower():
+                print(f'Loading train dataset \'{root_dir}\' ...')
+                train_set = CASIAWebFace_loader(root_dir, transform)
+
             elif 'GANDiffFace'.lower() in root_dir.lower():
                 print(f'Loading train dataset \'{root_dir}\' ...')
                 train_set = GANDiffFace_loader(root_dir, transform)

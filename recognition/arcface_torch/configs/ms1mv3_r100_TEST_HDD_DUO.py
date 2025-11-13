@@ -16,8 +16,8 @@ config.sample_rate = 1.0
 config.fp16 = True
 config.momentum = 0.9
 config.weight_decay = 5e-4
-# config.batch_size = 128
-config.batch_size = 256
+config.batch_size = 128
+# config.batch_size = 256
 config.lr = 0.1
 config.verbose = 2000
 # config.verbose = 10
@@ -36,17 +36,17 @@ config.train_rule = None             # default
 
 if uname.nodename == 'duo':
     # config.rec = "/train_tmp/faces_emore"
-    # config.rec = '/datasets2/frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112'     # duo
-    # config.rec = '/datasets2/frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112'        # duo
-    # config.rec = '/home/bjgbiesseck/datasets/real/CASIA-WebFace/faces_webface_112x112'                # duo (rec file)
-    config.rec = '/home/bjgbiesseck/datasets/real/CASIA-WebFace/imgs_crops_112x112'                     # images folder  
+    # config.rec = '/datasets1/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/images'                         # duo (rec file)
+    # config.rec = '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112'
+    config.rec = '/datasets3/bjgbiesseck/face_recognition/MS-Celeb-1M/ms1m-retinaface-t1/images'
 
     # config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
     # config.val_targets = ['lfw', 'cfp_fp', 'cfp_fp', 'cplfw', 'agedb_30', 'calfw']
-    config.val_targets = ['/home/bjgbiesseck/datasets/real/CASIA-WebFace/faces_webface_112x112/lfw.bin', '/home/bjgbiesseck/datasets/real/CASIA-WebFace/faces_webface_112x112/cfp_fp.bin', '/home/bjgbiesseck/datasets/real/CASIA-WebFace/faces_webface_112x112/cfp_fp.bin', '/home/bjgbiesseck/datasets/real/CASIA-WebFace/faces_webface_112x112/cplfw.bin', '/home/bjgbiesseck/datasets/real/CASIA-WebFace/faces_webface_112x112/agedb_30.bin', '/home/bjgbiesseck/datasets/real/CASIA-WebFace/faces_webface_112x112/calfw.bin']
     # config.val_targets = ['']
     # config.val_targets = ['bupt']
-    # config.val_targets = ['/datasets2/frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin', '/datasets2/frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_fp.bin', '/datasets2/frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/agedb_30.bin', 'bupt']
+    # config.val_targets = ['/datasets1/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/lfw.bin', '/datasets1/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/cfp_fp.bin', '/datasets1/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/agedb_30.bin']
+    # config.val_targets = ['/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin', '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_fp.bin', '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/agedb_30.bin']
+    config.val_targets = ['/datasets3/bjgbiesseck/face_recognition/CASIA-WebFace/faces_webface_112x112/lfw.bin', '/datasets3/bjgbiesseck/face_recognition/CASIA-WebFace/faces_webface_112x112/cfp_fp.bin', '/datasets3/bjgbiesseck/face_recognition/CASIA-WebFace/faces_webface_112x112/agedb_30.bin']
     # config.val_dataset_dir = ['/datasets2/frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112']
     # config.val_protocol_path = ['/datasets2/frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
     config.val_dataset_dir = ['']
@@ -65,13 +65,13 @@ else:
 
 
 # config.num_classes = 85742
-config.num_classes = 10572
+config.num_classes = 93422
 
 # config.num_image = 5822653
-config.num_image = 490623
+config.num_image = 5178879 
 
 # config.num_epoch = 20
-config.num_epoch = 200
+config.num_epoch = 60
 config.warmup_epoch = 0
 
 
@@ -88,7 +88,7 @@ config.using_wandb = False
 # config.wandb_entity = "entity"
 config.wandb_entity = "bovifocr"
 
-config.wandb_project = "R100_CASIA-Webface_10500classes_whole_dataset"
+config.wandb_project = "R100_MS1MV3_93kclasses_whole_dataset"
 config.wandb_log_all = True
 
 # config.save_artifacts = False
