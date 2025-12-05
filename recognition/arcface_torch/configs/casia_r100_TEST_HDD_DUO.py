@@ -16,8 +16,8 @@ config.sample_rate = 1.0
 config.fp16 = True
 config.momentum = 0.9
 config.weight_decay = 5e-4
-# config.batch_size = 128
-config.batch_size = 256
+config.batch_size = 128
+# config.batch_size = 256
 config.lr = 0.1
 config.verbose = 2000
 # config.verbose = 10
@@ -39,7 +39,8 @@ if uname.nodename == 'duo':
     # config.rec = '/datasets2/frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112'     # duo
     # config.rec = '/datasets2/frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112'        # duo
     # config.rec = '/home/bjgbiesseck/datasets/real/CASIA-WebFace/faces_webface_112x112'                # duo (rec file)
-    config.rec = '/home/bjgbiesseck/datasets/real/CASIA-WebFace/imgs_crops_112x112'                     # images folder  
+    # config.rec = '/home/bjgbiesseck/datasets/real/CASIA-WebFace/imgs_crops_112x112'                   # images folder  
+    config.rec = '/nobackup3/bjgbiesseck/CASIA-Webface/imgs_crops_112x112'                   # images folder
 
     # config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
     # config.val_targets = ['lfw', 'cfp_fp', 'cfp_fp', 'cplfw', 'agedb_30', 'calfw']

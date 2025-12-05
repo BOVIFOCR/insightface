@@ -38,7 +38,7 @@ if uname.nodename == 'duo':
     # config.rec = "/train_tmp/faces_emore"
     # config.rec = '/datasets1/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/images'                         # duo (rec file)
     # config.rec = '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112'
-    config.rec = '/datasets3/bjgbiesseck/face_recognition/MS-Celeb-1M/ms1m-retinaface-t1/images'
+    config.rec = '/nobackup3/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/images'
 
     # config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
     # config.val_targets = ['lfw', 'cfp_fp', 'cfp_fp', 'cplfw', 'agedb_30', 'calfw']
@@ -46,7 +46,7 @@ if uname.nodename == 'duo':
     # config.val_targets = ['bupt']
     # config.val_targets = ['/datasets1/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/lfw.bin', '/datasets1/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/cfp_fp.bin', '/datasets1/bjgbiesseck/MS-Celeb-1M/ms1m-retinaface-t1/agedb_30.bin']
     # config.val_targets = ['/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/lfw.bin', '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/cfp_fp.bin', '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/faces_webface_112x112/agedb_30.bin']
-    config.val_targets = ['/datasets3/bjgbiesseck/face_recognition/CASIA-WebFace/faces_webface_112x112/lfw.bin', '/datasets3/bjgbiesseck/face_recognition/CASIA-WebFace/faces_webface_112x112/cfp_fp.bin', '/datasets3/bjgbiesseck/face_recognition/CASIA-WebFace/faces_webface_112x112/agedb_30.bin']
+    config.val_targets = ['/nobackup3/bjgbiesseck/CASIA-Webface/faces_webface_112x112/lfw.bin', '/nobackup3/bjgbiesseck/CASIA-Webface/faces_webface_112x112/cfp_fp.bin', '/nobackup3/bjgbiesseck/CASIA-Webface/faces_webface_112x112/agedb_30.bin']
     # config.val_dataset_dir = ['/datasets2/frcsyn_wacv2024/datasets/real/3_BUPT-BalancedFace/race_per_7000_crops_112x112']
     # config.val_protocol_path = ['/datasets2/frcsyn_wacv2024/comparison_files/comparison_files/sub-tasks_1.1_1.2/bupt_comparison.txt']
     config.val_dataset_dir = ['']
