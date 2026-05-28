@@ -338,7 +338,7 @@ if __name__ == "__main__":
                     probe_cossims = cosine_similarity_torch(gallery_norm_embedd, probe_faces_embedds)
                     probe_cossims = probe_cossims.cpu().numpy()
                     print('            probe_cossims:', probe_cossims)
-                    if probe_cossims.max() > args.thresh:
+                    if probe_cossims.max() >= args.thresh:
                         index_max_sim = np.where(probe_cossims == probe_cossims.max())[0].item()
                         selected_faces_paths.append(probe_faces_paths[index_max_sim])
                         selected_faces_sims.append(probe_cossims[index_max_sim])
