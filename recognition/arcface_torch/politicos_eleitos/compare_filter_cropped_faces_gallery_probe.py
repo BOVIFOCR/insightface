@@ -115,11 +115,11 @@ def save_grid_selected_discarded_faces(
     discarded_faces_sims,
     title,
     output_grid_view_path,
-    figsize=(18, 10),
+    figsize=(20, 10),
     title_fontsize=16,
     sub_title_fontsize=14,
-    wspace=0.3,
-    hspace=0.4,
+    wspace=0.2,
+    hspace=0.3,
 ):
     """Generates and saves a 3-subfigure compilation layout showcasing a gallery image,
 
@@ -165,7 +165,8 @@ def save_grid_selected_discarded_faces(
             return
 
         # Force a uniform 10x10 grid system
-        rows, cols = 10, 10
+        # rows, cols = 10, 10
+        rows, cols = 15, 15
 
         # Build an internal GridSpec matrix coordinate network inside the structural bounding box
         inner_gs = ax_handle.get_subplotspec().subgridspec(
@@ -191,6 +192,7 @@ def save_grid_selected_discarded_faces(
                         # Path(face_path).stem.split("_conf")[0],
                         f'{face_sim:.2f}',
                         fontsize=max(sub_title_fontsize - 6, 6),
+                        labelpad=0.1
                     )
                 except Exception:
                     inner_ax.text(
