@@ -25,6 +25,12 @@ def parse_args():
     parser.add_argument('--gallery', type=str, default='/experiments/adsouza/image_gallery_DETECTED_FACES_RETINAFACE_scales=[0.5]_thresh=0.5_nms=0.4/imgs_112x112')
     parser.add_argument('--output', type=str, default='')
     parser.add_argument('--thresh', type=float, default=0.3)
+
+    parser.add_argument('--str_begin',   default='', type=str, help='Substring to find and start processing')
+    parser.add_argument('--str_end',     default='', type=str, help='Substring to find and stop processing')
+    # parser.add_argument('--str_pattern', default='', type=str, help='Substring to find and stop processing')
+    parser.add_argument('--dont_replace_existing_result', action='store_true')
+
     args = parser.parse_args()
     return args
 
@@ -291,90 +297,136 @@ if __name__ == "__main__":
     if not args.output:
         args.output = f"{args.probe}_SELECTED_DISCARDED_FACES"
 
-    print(f'Loading trained model ({args.network}): {args.weight}')
+    print(f'Loading trained model ({args.network}): \'{args.weight}\'')
     model = load_trained_model(args.network, args.weight)
 
 
+    print(f'Loading probe subjects paths: \'{args.probe}\'')
     all_probe_subj_paths = get_immediate_subdirs(args.probe)
-    print('len(all_probe_subj_paths):', len(all_probe_subj_paths))
+    # print('    all_probe_subj_paths:', all_probe_subj_paths)
+    print('    len(all_probe_subj_paths):', len(all_probe_subj_paths))
+    # sys.exit(0)
+
+    begin_index_str = 0
+    end_index_str = len(all_probe_subj_paths)
+
+    if args.str_begin != '':
+        print('\nSearching str_begin \'' + args.str_begin + '\' ...  ')
+        for i, probe_subj_path in enumerate(all_probe_subj_paths):
+            if args.str_begin in str(probe_subj_path):
+                begin_index_str = i
+                print('    found at', begin_index_str)
+                break
+
+    if args.str_end != '':
+        print('\nSearching str_end \'' + args.str_end + '\' ...  ')
+        for i, probe_subj_path in enumerate(all_probe_subj_paths):
+            if args.str_end in str(probe_subj_path):
+                end_index_str = i
+                print('    found at', end_index_str)
+                break
+    
+    print('\n------------------------')
+    print('begin_index_str:', begin_index_str)
+    print('end_index_str:', end_index_str)
+    print('------------------------\n')
     # sys.exit(0)
 
     for idx_probe_subj, probe_subj_path in enumerate(all_probe_subj_paths):
-        print(f"Subj {idx_probe_subj}/{len(all_probe_subj_paths)} - '{probe_subj_path}'")
-        all_probe_subj_videos_paths = get_immediate_subdirs(probe_subj_path)
-        if len(all_probe_subj_videos_paths) > 0:
-            subj_name = os.path.basename(probe_subj_path)
-            pattern_gallery_img = os.path.join(args.gallery, f'{subj_name}_*.png').replace('[','*')
-            # print('pattern_gallery_img:', pattern_gallery_img)
-            path_gallery_img = glob.glob(pattern_gallery_img)
-            assert len(path_gallery_img) > 0
-            path_gallery_img = path_gallery_img[0]
-            # print('path_gallery_img:', path_gallery_img)
-            gallery_norm_img = load_normalize_img(path_gallery_img)
-            gallery_norm_embedd = get_face_embedd(model, gallery_norm_img)
-            
-            for idx_probe_video, path_probe_videos_path in enumerate(all_probe_subj_videos_paths):
-                print(f"    Video {idx_probe_video}/{len(all_probe_subj_videos_paths)} - '{path_probe_videos_path}'")
-                video_name = os.path.basename(path_probe_videos_path)
-                dict_frames_probe_video = load_faces_frames_videos(path_probe_videos_path)
-                # print('dict_frames_probe_video:', dict_frames_probe_video)
-
-                selected_faces_paths  = []
-                selected_faces_sims   = []
-
-                discarded_faces_paths = []
-                discarded_faces_sims  = []
-                for idx_frame_key, frame_key in enumerate(list(dict_frames_probe_video.keys())):
-                    print(f"        Frame {idx_frame_key}/{frame_key}")
-                    probe_faces_paths = dict_frames_probe_video[frame_key]
-                    assert len(probe_faces_paths) > 0
-                    probe_faces_imgs = [load_normalize_img(probe_face_path) for probe_face_path in probe_faces_paths]
-                    # print('probe_faces_imgs[0].shape:', probe_faces_imgs[0].shape)
-                    probe_faces_imgs = torch.cat(probe_faces_imgs).to(device="cuda")
-                    probe_faces_embedds = get_face_embedd(model, probe_faces_imgs)
-                    # print('probe_faces_embedds.shape:', probe_faces_embedds.shape)
-
-                    # probe_cossims = np.array([cosine_similarity(gallery_norm_embedd, probe_faces_embedd) for probe_faces_embedd in probe_faces_embedds])
-                    probe_cossims = cosine_similarity_torch(gallery_norm_embedd, probe_faces_embedds)
-                    probe_cossims = probe_cossims.cpu().numpy()
-                    print('            probe_cossims:', probe_cossims)
-                    if probe_cossims.max() >= args.thresh:
-                        index_max_sim = np.where(probe_cossims == probe_cossims.max())[0].item()
-                        selected_faces_paths.append(probe_faces_paths[index_max_sim])
-                        selected_faces_sims.append(probe_cossims[index_max_sim])
-                        # print(f'            index_max_sim: {index_max_sim} - selected_face_path:', selected_face_path)
-                        print(f'            index_max_sim: {index_max_sim}')
-                        for i in range(len(probe_cossims)):
-                            if i != index_max_sim: 
-                                discarded_faces_paths.append(probe_faces_paths[i])
-                                discarded_faces_sims.append(probe_cossims[i])
-                    else:
-                        discarded_faces_paths.extend(probe_faces_paths)
-                        discarded_faces_sims.extend(list(probe_cossims))
-
-                print(f'        len(selected_faces_paths):  {len(selected_faces_paths)}')
-                print(f'        len(discarded_faces_paths): {len(discarded_faces_paths)}')
-
-
-                output_selected_discarded_frames_dir = os.path.join(f"{args.output}", subj_name, video_name)
-                os.makedirs(output_selected_discarded_frames_dir, exist_ok=True)
-                print(f'        Copying selected and discarded faces: \'{output_selected_discarded_frames_dir}\'')
-                copy_selected_discarded_frames(selected_faces_paths, discarded_faces_paths, output_selected_discarded_frames_dir)
-                
-
-                selected_discarded_faces_figure_filename = f'selected_discarded_faces_subj={subj_name}_video={video_name}.png'
-                output_grid_view_path = os.path.join(f"{args.output}_GRIDS_VIEWS", subj_name, selected_discarded_faces_figure_filename)
-                os.makedirs(os.path.dirname(output_grid_view_path), exist_ok=True)
-                title = f"Subj: '{subj_name}'    Video: '{video_name}'"
-                print(f'        Saving grid of selected and discarded faces: \'{output_grid_view_path}\'')
-                save_grid_selected_discarded_faces(path_gallery_img,
-                                                   selected_faces_paths, selected_faces_sims,
-                                                   discarded_faces_paths, discarded_faces_sims,
-                                                   title, output_grid_view_path)
-
-            # sys.exit(0)
-        # sys.exit(0)
         print("-----------------------")
+        print(f"Subj {idx_probe_subj}/{len(all_probe_subj_paths)} - '{probe_subj_path}'")
+
+        if idx_probe_subj >= begin_index_str and idx_probe_subj <= end_index_str:
+            all_probe_subj_videos_paths = get_immediate_subdirs(probe_subj_path)
+            if len(all_probe_subj_videos_paths) > 0:
+                subj_name = os.path.basename(probe_subj_path)
+                pattern_gallery_img = os.path.join(args.gallery, f'{subj_name}_*.png').replace('[','*')
+                print('    pattern_gallery_img:', pattern_gallery_img)
+                path_gallery_img = glob.glob(pattern_gallery_img)
+                if len(path_gallery_img) == 0:
+                    print(f"    Skipping subj \'{subj_name}\'. Gallery image not found with pattern \'{pattern_gallery_img}\'")
+                    continue
+                path_gallery_img = path_gallery_img[0]
+                # print('path_gallery_img:', path_gallery_img)
+                gallery_norm_img = load_normalize_img(path_gallery_img)
+                gallery_norm_embedd = get_face_embedd(model, gallery_norm_img)
+                
+                for idx_probe_video, path_probe_videos_path in enumerate(all_probe_subj_videos_paths):
+                    print(f"    Video {idx_probe_video}/{len(all_probe_subj_videos_paths)} - '{path_probe_videos_path}'")
+                    video_name = os.path.basename(path_probe_videos_path)
+                    dict_frames_probe_video = load_faces_frames_videos(path_probe_videos_path)
+                    # print('dict_frames_probe_video:', dict_frames_probe_video)
+
+                    output_selected_discarded_frames_dir = os.path.join(f"{args.output}", subj_name, video_name)
+                    selected_discarded_faces_figure_filename = f'selected_discarded_faces_subj={subj_name}_video={video_name}.png'
+                    output_grid_view_path = os.path.join(f"{args.output}_GRIDS_VIEWS", subj_name, selected_discarded_faces_figure_filename)
+
+                    if args.dont_replace_existing_result:
+                        if os.path.isdir(output_selected_discarded_frames_dir) and os.path.isfile(output_grid_view_path):
+                            img_grid_view = cv2.imread(output_grid_view_path)
+                            if not img_grid_view is None:
+                                print(f"        Skipping video already processed!")
+                                continue
+
+
+                    selected_faces_paths  = []
+                    selected_faces_sims   = []
+
+                    discarded_faces_paths = []
+                    discarded_faces_sims  = []
+                    for idx_frame_key, frame_key in enumerate(list(dict_frames_probe_video.keys())):
+                        print(f"        Frame {idx_frame_key}/{frame_key}")
+                        probe_faces_paths = dict_frames_probe_video[frame_key]
+                        assert len(probe_faces_paths) > 0
+                        probe_faces_imgs = [load_normalize_img(probe_face_path) for probe_face_path in probe_faces_paths]
+                        # print('probe_faces_imgs[0].shape:', probe_faces_imgs[0].shape)
+                        probe_faces_imgs = torch.cat(probe_faces_imgs).to(device="cuda")
+                        probe_faces_embedds = get_face_embedd(model, probe_faces_imgs)
+                        # print('probe_faces_embedds.shape:', probe_faces_embedds.shape)
+
+                        # probe_cossims = np.array([cosine_similarity(gallery_norm_embedd, probe_faces_embedd) for probe_faces_embedd in probe_faces_embedds])
+                        probe_cossims = cosine_similarity_torch(gallery_norm_embedd, probe_faces_embedds)
+                        probe_cossims = probe_cossims.cpu().numpy()
+                        print('            probe_cossims:', probe_cossims)
+                        if probe_cossims.max() >= args.thresh:
+                            index_max_sim = np.where(probe_cossims == probe_cossims.max())[0].item()
+                            selected_faces_paths.append(probe_faces_paths[index_max_sim])
+                            selected_faces_sims.append(probe_cossims[index_max_sim])
+                            # print(f'            index_max_sim: {index_max_sim} - selected_face_path:', selected_face_path)
+                            print(f'            index_max_sim: {index_max_sim}')
+                            for i in range(len(probe_cossims)):
+                                if i != index_max_sim: 
+                                    discarded_faces_paths.append(probe_faces_paths[i])
+                                    discarded_faces_sims.append(probe_cossims[i])
+                        else:
+                            discarded_faces_paths.extend(probe_faces_paths)
+                            discarded_faces_sims.extend(list(probe_cossims))
+
+                    print(f'        len(selected_faces_paths):  {len(selected_faces_paths)}')
+                    print(f'        len(discarded_faces_paths): {len(discarded_faces_paths)}')
+
+
+                    # output_selected_discarded_frames_dir = os.path.join(f"{args.output}", subj_name, video_name)
+                    os.makedirs(output_selected_discarded_frames_dir, exist_ok=True)
+                    print(f'        Copying selected and discarded faces: \'{output_selected_discarded_frames_dir}\'')
+                    copy_selected_discarded_frames(selected_faces_paths, discarded_faces_paths, output_selected_discarded_frames_dir)
+                    
+
+                    # selected_discarded_faces_figure_filename = f'selected_discarded_faces_subj={subj_name}_video={video_name}.png'
+                    # output_grid_view_path = os.path.join(f"{args.output}_GRIDS_VIEWS", subj_name, selected_discarded_faces_figure_filename)
+                    os.makedirs(os.path.dirname(output_grid_view_path), exist_ok=True)
+                    title = f"Subj: '{subj_name}'    Video: '{video_name}'"
+                    print(f'        Saving grid of selected and discarded faces: \'{output_grid_view_path}\'')
+                    save_grid_selected_discarded_faces(path_gallery_img,
+                                                    selected_faces_paths, selected_faces_sims,
+                                                    discarded_faces_paths, discarded_faces_sims,
+                                                    title, output_grid_view_path)
+
+                # sys.exit(0)
+            # sys.exit(0)
+            # print("-----------------------")
+        else:
+            print(f"    Skipping subj \'{subj_name}\' due to index constraints (begin_index_str: {begin_index_str}, end_index_str: {end_index_str})")
             
 
 
