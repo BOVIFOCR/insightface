@@ -51,7 +51,8 @@ def load_faces_frames_videos(videos_path):
         raise ValueError(f"The path '{videos_path}' is not a valid directory.")
 
     frames_dict = defaultdict(list)
-    frame_prefix_pattern = re.compile(r"^(frame_\d+)")
+    # frame_prefix_pattern = re.compile(r"^(frame_\d+)")
+    frame_prefix_pattern = re.compile(r"^(0*\d+)")
     for entry in base_path.iterdir():
         if entry.is_file():
             filename = entry.name
@@ -74,26 +75,34 @@ def cosine_similarity(embedd1, embedd2):
     return sim
 
 
+def cosine_similarity_torch(gallery_norm_embedd, probe_faces_embedds):
+    gallery_norm = gallery_norm_embedd / gallery_norm_embedd.norm(dim=1, keepdim=True)
+    probe_norm   = probe_faces_embedds / probe_faces_embedds.norm(dim=1, keepdim=True)
+    similarity_matrix = torch.nn.functional.cosine_similarity(gallery_norm, probe_norm)
+    return similarity_matrix
+
+
 @torch.no_grad()
 def get_face_embedd(model, img):
-    embedd = model(img).numpy()
+    # embedd = model(img).cpu().numpy()
+    embedd = model(img)
     return embedd
 
 
-def load_trained_model(network, path_weights):
+def load_trained_model(network, path_weights, device="cuda"):
     net = get_model(network, fp16=False)
     net.load_state_dict(torch.load(path_weights))
     net.eval()
+    net = net.to(device)
     return net
 
 
-def load_normalize_img(img):
+def load_normalize_img(img, device="cuda"):
     img = cv2.imread(img)
     img = cv2.resize(img, (112, 112))
-
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = np.transpose(img, (2, 0, 1))
-    img = torch.from_numpy(img).unsqueeze(0).float()
+    img = torch.from_numpy(img).unsqueeze(0).float().to(device)
     img.div_(255).sub_(0.5).div_(0.5)
     return img
 
@@ -318,9 +327,14 @@ if __name__ == "__main__":
                     probe_faces_paths = dict_frames_probe_video[frame_key]
                     assert len(probe_faces_paths) > 0
                     probe_faces_imgs = [load_normalize_img(probe_face_path) for probe_face_path in probe_faces_paths]
-                    probe_faces_embedds = [get_face_embedd(model, probe_faces_img) for probe_faces_img in probe_faces_imgs]
+                    # print('probe_faces_imgs[0].shape:', probe_faces_imgs[0].shape)
+                    probe_faces_imgs = torch.cat(probe_faces_imgs).to(device="cuda")
+                    probe_faces_embedds = get_face_embedd(model, probe_faces_imgs)
+                    # print('probe_faces_embedds.shape:', probe_faces_embedds.shape)
 
-                    probe_cossims = np.array([cosine_similarity(gallery_norm_embedd, probe_faces_embedd) for probe_faces_embedd in probe_faces_embedds])
+                    # probe_cossims = np.array([cosine_similarity(gallery_norm_embedd, probe_faces_embedd) for probe_faces_embedd in probe_faces_embedds])
+                    probe_cossims = cosine_similarity_torch(gallery_norm_embedd, probe_faces_embedds)
+                    probe_cossims = probe_cossims.cpu().numpy()
                     print('            probe_cossims:', probe_cossims)
                     if probe_cossims.max() > args.thresh:
                         index_max_sim = np.where(probe_cossims == probe_cossims.max())[0].item()
@@ -357,7 +371,7 @@ if __name__ == "__main__":
                                                    title, output_grid_view_path)
 
             # sys.exit(0)
-        
+        # sys.exit(0)
         print("-----------------------")
             
 
