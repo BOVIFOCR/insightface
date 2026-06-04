@@ -313,6 +313,7 @@ if __name__ == "__main__":
     if args.str_begin != '':
         print('\nSearching str_begin \'' + args.str_begin + '\' ...  ')
         for i, probe_subj_path in enumerate(all_probe_subj_paths):
+            # print('str(probe_subj_path):', str(probe_subj_path))
             if args.str_begin in str(probe_subj_path):
                 begin_index_str = i
                 print('    found at', begin_index_str)
@@ -321,6 +322,7 @@ if __name__ == "__main__":
     if args.str_end != '':
         print('\nSearching str_end \'' + args.str_end + '\' ...  ')
         for i, probe_subj_path in enumerate(all_probe_subj_paths):
+            # print('str(probe_subj_path):', str(probe_subj_path))
             if args.str_end in str(probe_subj_path):
                 end_index_str = i
                 print('    found at', end_index_str)
@@ -337,9 +339,10 @@ if __name__ == "__main__":
         print(f"Subj {idx_probe_subj}/{len(all_probe_subj_paths)} - '{probe_subj_path}'")
 
         if idx_probe_subj >= begin_index_str and idx_probe_subj <= end_index_str:
+            subj_name = os.path.basename(probe_subj_path)
             all_probe_subj_videos_paths = get_immediate_subdirs(probe_subj_path)
             if len(all_probe_subj_videos_paths) > 0:
-                subj_name = os.path.basename(probe_subj_path)
+                # subj_name = os.path.basename(probe_subj_path)
                 pattern_gallery_img = os.path.join(args.gallery, f'{subj_name}_*.png').replace('[','*')
                 print('    pattern_gallery_img:', pattern_gallery_img)
                 path_gallery_img = glob.glob(pattern_gallery_img)
