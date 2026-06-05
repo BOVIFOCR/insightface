@@ -326,8 +326,9 @@ def save_grid_selected_discarded_faces(
             if idx < len(face_paths):
                 face_path = face_paths[idx]
                 inner_ax = fig.add_subplot(inner_gs[r, c])
-                face_sim_to_gallery = faces_sims_to_gallery[idx].item()
-                face_sim_to_selected = faces_sims_to_selected[idx].item()
+                face_sim_to_gallery = faces_sims_to_gallery[idx].item() if len(faces_sims_to_gallery) > 1 else 0
+                face_sim_to_selected = faces_sims_to_selected[idx].item() if len(faces_sims_to_selected) > 1 else 0
+                
 
                 try:
                     img = plt.imread(face_path)
@@ -403,10 +404,12 @@ def copy_selected_discarded_frames(
 ):
     # 2. Define and create the 'selected' subfolder
     # selected_target_dir = base_output_path / "selected"
+    selected_target_dir = Path(selected_target_dir)
     selected_target_dir.mkdir(parents=True, exist_ok=True)
 
     # 3. Define and create the 'discarded' subfolder
     # discarded_target_dir = base_output_path / "discarded"
+    discarded_target_dir = Path(discarded_target_dir)
     discarded_target_dir.mkdir(parents=True, exist_ok=True)
 
     # 4. Copy the selected files
@@ -504,6 +507,9 @@ if __name__ == "__main__":
                     print('    ---')
                     print(f"    Video {idx_probe_video}/{len(all_probe_subj_videos_paths)} - '{path_probe_video_path}'")
                     video_name = os.path.basename(path_probe_video_path)
+                    output_selected_discarded_frames_dir = os.path.join(f"{args.output}", subj_name, video_name)
+                    selected_discarded_faces_figure_filename = f'selected_discarded_faces_subj={subj_name}_video={video_name}_SELECTION_2.png'
+                    output_grid_view_path = os.path.join(f"{args.output}_GRIDS_VIEWS", subj_name, selected_discarded_faces_figure_filename)
 
                     path_probe_video_selected_faces  = os.path.join(path_probe_video_path, "selected")
                     path_probe_video_discarded_faces = os.path.join(path_probe_video_path, "discarded")
@@ -516,72 +522,101 @@ if __name__ == "__main__":
                     print('            len(paths_probe_video_discarded_faces):', len(paths_probe_video_discarded_faces))
                     # sys.exit(0)
 
-                    if len(paths_probe_video_selected_faces) == 0:
-                        print(f'            Skipping video without selected faces!')
-                        continue
-
-                    if len(paths_probe_video_discarded_faces) == 0:
-                        print(f'            Skipping video without discarded faces!')
-                        continue
-
-                    probe_video_selected_faces_norm_img  = torch.cat([load_normalize_img(path_selected_frame) for path_selected_frame in paths_probe_video_selected_faces])
-                    probe_video_discarded_faces_norm_img = torch.cat([load_normalize_img(path_discarded_frame) for path_discarded_frame in paths_probe_video_discarded_faces])
-                    # print('            probe_video_selected_faces_norm_img.shape:', probe_video_selected_faces_norm_img.shape)
-                    # print('            probe_video_discarded_faces_norm_img.shape:', probe_video_discarded_faces_norm_img.shape)
-                    # sys.exit(0)
-
-                    probe_video_selected_faces_embedds  = get_face_embedd_batch(model, probe_video_selected_faces_norm_img)
-                    probe_video_discarded_faces_embedds = get_face_embedd_batch(model, probe_video_discarded_faces_norm_img)
-                    # print('            probe_video_selected_faces_embedds.shape:', probe_video_selected_faces_embedds.shape)
-                    # print('            probe_video_discarded_faces_embedds.shape:', probe_video_discarded_faces_embedds.shape)
-                    # sys.exit(0)
-                    selected_faces_to_gallery_cossim  = cosine_similarity_torch(probe_video_selected_faces_embedds, gallery_norm_embedd).cpu().numpy()
-
-
-                    output_selected_discarded_frames_dir = os.path.join(f"{args.output}", subj_name, video_name)
-                    selected_discarded_faces_figure_filename = f'selected_discarded_faces_subj={subj_name}_video={video_name}_SELECTION_2.png'
-                    output_grid_view_path = os.path.join(f"{args.output}_GRIDS_VIEWS", subj_name, selected_discarded_faces_figure_filename)
-
-                    if args.dont_replace_existing_result:
-                        if os.path.isdir(output_selected_discarded_frames_dir) and os.path.isfile(output_grid_view_path):
-                            img_grid_view = cv2.imread(output_grid_view_path)
-                            if not img_grid_view is None:
-                                print(f"        Skipping video already processed!")
-                                continue
-
-
+                    # if len(paths_probe_video_selected_faces) == 0:
+                    #     print(f'            Skipping video without selected faces!')
+                    #     continue
+                    # if len(paths_probe_video_discarded_faces) == 0:
+                    #     print(f'            Skipping video without discarded faces!')
+                    #     continue
 
                     recovery_faces_paths            = []
                     recovery_faces_sims_to_gallery  = []
                     recovery_faces_sims_to_selected = []
 
-                    discarded_faces_paths = []
+                    discarded_faces_paths            = []
                     discarded_faces_sims_to_gallery  = []
                     discarded_faces_sims_to_selected = []
-                    for idx_discarded_face_embedd, (path_discarded_face, discarded_face_embedd) in enumerate(zip(paths_probe_video_discarded_faces, probe_video_discarded_faces_embedds)):
-                        print(f"        checking face {idx_discarded_face_embedd}/{len(paths_probe_video_discarded_faces)} - '{path_discarded_face}'", end='\r')
-                        discarded_face_to_gallery_cossim  = cosine_similarity_torch(discarded_face_embedd, gallery_norm_embedd).cpu().numpy()
-                        discarded_face_to_selected_cossim = cosine_similarity_torch(discarded_face_embedd, probe_video_selected_faces_embedds).cpu().numpy()
-                        # print('discarded_face_to_gallery_cossim:', discarded_face_to_gallery_cossim)
-                        # print('discarded_face_to_gallery_cossim.shape:', discarded_face_to_gallery_cossim.shape)
-                        # print('discarded_face_to_selected_cossim:', discarded_face_to_selected_cossim)
-                        # print('discarded_face_to_selected_cossim.shape:', discarded_face_to_selected_cossim.shape)
 
-                        if discarded_face_to_gallery_cossim >= args.thresh_gallery and discarded_face_to_selected_cossim.mean() >= args.thresh_selected:
-                            recovery_faces_paths.append(path_discarded_face)
-                            recovery_faces_sims_to_gallery.append(discarded_face_to_gallery_cossim)
-                            recovery_faces_sims_to_selected.append(discarded_face_to_selected_cossim.mean())
-                            # print(f'face recuperada: ({discarded_face_to_gallery_cossim}, {discarded_face_to_selected_cossim.mean()})', path_discarded_face)
-                        else:
-                            discarded_faces_paths.append(path_discarded_face)
-                            discarded_faces_sims_to_gallery.append(discarded_face_to_gallery_cossim)
-                            discarded_faces_sims_to_selected.append(discarded_face_to_selected_cossim.mean())
-                            # print(f'    face descartada: ({discarded_face_to_gallery_cossim}, {discarded_face_to_selected_cossim.mean()})', path_discarded_face)
-                    print()
-                    print(f'        len(paths_probe_video_selected_faces): {len(paths_probe_video_selected_faces)}')
-                    print(f'        len(recovery_faces_paths):             {len(recovery_faces_paths)}')
-                    print(f'        len(discarded_faces_paths):            {len(discarded_faces_paths)}')
-                    assert len(paths_probe_video_selected_faces) + len(recovery_faces_paths) + len(discarded_faces_paths) == len(paths_probe_video_selected_faces) + len(paths_probe_video_discarded_faces)
+                    selected_faces_to_gallery_cossim = []
+
+                    if args.dont_replace_existing_result:
+                            if os.path.isdir(output_selected_discarded_frames_dir) and os.path.isfile(output_grid_view_path):
+                                img_grid_view = cv2.imread(output_grid_view_path)
+                                if not img_grid_view is None:
+                                    print(f"        Skipping video already processed!")
+                                    continue
+
+                    if len(paths_probe_video_selected_faces) > 0 and len(paths_probe_video_discarded_faces) > 0:
+                        probe_video_selected_faces_norm_img  = torch.cat([load_normalize_img(path_selected_frame) for path_selected_frame in paths_probe_video_selected_faces])
+                        probe_video_discarded_faces_norm_img = torch.cat([load_normalize_img(path_discarded_frame) for path_discarded_frame in paths_probe_video_discarded_faces])
+                        # print('            probe_video_selected_faces_norm_img.shape:', probe_video_selected_faces_norm_img.shape)
+                        # print('            probe_video_discarded_faces_norm_img.shape:', probe_video_discarded_faces_norm_img.shape)
+                        # sys.exit(0)
+
+                        probe_video_selected_faces_embedds  = get_face_embedd_batch(model, probe_video_selected_faces_norm_img)
+                        probe_video_discarded_faces_embedds = get_face_embedd_batch(model, probe_video_discarded_faces_norm_img)
+                        # print('            probe_video_selected_faces_embedds.shape:', probe_video_selected_faces_embedds.shape)
+                        # print('            probe_video_discarded_faces_embedds.shape:', probe_video_discarded_faces_embedds.shape)
+                        # sys.exit(0)
+                        selected_faces_to_gallery_cossim  = cosine_similarity_torch(probe_video_selected_faces_embedds, gallery_norm_embedd).cpu().numpy()
+
+
+                        # output_selected_discarded_frames_dir = os.path.join(f"{args.output}", subj_name, video_name)
+                        # selected_discarded_faces_figure_filename = f'selected_discarded_faces_subj={subj_name}_video={video_name}_SELECTION_2.png'
+                        # output_grid_view_path = os.path.join(f"{args.output}_GRIDS_VIEWS", subj_name, selected_discarded_faces_figure_filename)
+
+                        # if args.dont_replace_existing_result:
+                        #     if os.path.isdir(output_selected_discarded_frames_dir) and os.path.isfile(output_grid_view_path):
+                        #         img_grid_view = cv2.imread(output_grid_view_path)
+                        #         if not img_grid_view is None:
+                        #             print(f"        Skipping video already processed!")
+                        #             continue
+
+                        # recovery_faces_paths            = []
+                        # recovery_faces_sims_to_gallery  = []
+                        # recovery_faces_sims_to_selected = []
+                        #
+                        # discarded_faces_paths = []
+                        # discarded_faces_sims_to_gallery  = []
+                        # discarded_faces_sims_to_selected = []
+                        for idx_discarded_face_embedd, (path_discarded_face, discarded_face_embedd) in enumerate(zip(paths_probe_video_discarded_faces, probe_video_discarded_faces_embedds)):
+                            print(f"        checking face {idx_discarded_face_embedd}/{len(paths_probe_video_discarded_faces)} - '{path_discarded_face}'", end='\r')
+                            discarded_face_to_gallery_cossim  = cosine_similarity_torch(discarded_face_embedd, gallery_norm_embedd).cpu().numpy()
+                            discarded_face_to_selected_cossim = cosine_similarity_torch(discarded_face_embedd, probe_video_selected_faces_embedds).cpu().numpy()
+                            # print('discarded_face_to_gallery_cossim:', discarded_face_to_gallery_cossim)
+                            # print('discarded_face_to_gallery_cossim.shape:', discarded_face_to_gallery_cossim.shape)
+                            # print('discarded_face_to_selected_cossim:', discarded_face_to_selected_cossim)
+                            # print('discarded_face_to_selected_cossim.shape:', discarded_face_to_selected_cossim.shape)
+
+                            if discarded_face_to_gallery_cossim >= args.thresh_gallery and discarded_face_to_selected_cossim.mean() >= args.thresh_selected:
+                                recovery_faces_paths.append(path_discarded_face)
+                                recovery_faces_sims_to_gallery.append(discarded_face_to_gallery_cossim)
+                                recovery_faces_sims_to_selected.append(discarded_face_to_selected_cossim.mean())
+                                # print(f'face recuperada: ({discarded_face_to_gallery_cossim}, {discarded_face_to_selected_cossim.mean()})', path_discarded_face)
+                            else:
+                                discarded_faces_paths.append(path_discarded_face)
+                                discarded_faces_sims_to_gallery.append(discarded_face_to_gallery_cossim)
+                                discarded_faces_sims_to_selected.append(discarded_face_to_selected_cossim.mean())
+                                # print(f'    face descartada: ({discarded_face_to_gallery_cossim}, {discarded_face_to_selected_cossim.mean()})', path_discarded_face)
+                        print()
+                        print(f'        len(paths_probe_video_selected_faces): {len(paths_probe_video_selected_faces)}')
+                        print(f'        len(recovery_faces_paths):             {len(recovery_faces_paths)}')
+                        print(f'        len(discarded_faces_paths):            {len(discarded_faces_paths)}')
+                        assert len(paths_probe_video_selected_faces) + len(recovery_faces_paths) + len(discarded_faces_paths) == len(paths_probe_video_selected_faces) + len(paths_probe_video_discarded_faces)
+
+
+                    elif len(paths_probe_video_selected_faces) > 0:
+                        probe_video_selected_faces_norm_img  = torch.cat([load_normalize_img(path_selected_frame) for path_selected_frame in paths_probe_video_selected_faces])
+                        probe_video_selected_faces_embedds  = get_face_embedd_batch(model, probe_video_selected_faces_norm_img)
+                        selected_faces_to_gallery_cossim  = cosine_similarity_torch(probe_video_selected_faces_embedds, gallery_norm_embedd).cpu().numpy()
+
+
+                    elif len(paths_probe_video_discarded_faces) > 0:
+                        discarded_faces_paths = paths_probe_video_discarded_faces
+                        probe_video_discarded_faces_norm_img = torch.cat([load_normalize_img(path_discarded_frame) for path_discarded_frame in paths_probe_video_discarded_faces])
+                        probe_video_discarded_faces_embedds = get_face_embedd_batch(model, probe_video_discarded_faces_norm_img)
+                        discarded_faces_sims_to_gallery  = cosine_similarity_torch(probe_video_discarded_faces_embedds, gallery_norm_embedd).cpu().numpy()
+                        
 
                     output_selected_faces_dir  = os.path.join(output_selected_discarded_frames_dir, "selected")
                     output_discarded_faces_dir = os.path.join(output_selected_discarded_frames_dir, "discarded")
