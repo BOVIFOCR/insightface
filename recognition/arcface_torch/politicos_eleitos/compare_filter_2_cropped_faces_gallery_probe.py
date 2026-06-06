@@ -11,6 +11,7 @@ import re
 import glob
 from collections import defaultdict
 import shutil
+import time
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, '..')
@@ -471,7 +472,10 @@ if __name__ == "__main__":
     total_num_videos_with_recovered_faces = 0
     total_num_recovered_faces = 0
 
+    total_exec_time = 0.0
+
     for idx_probe_subj, probe_subj_path in enumerate(all_probe_subj_paths):
+        subj_start_time = time.time()
         print("-----------------------")
         print(f"Subj {idx_probe_subj}/{len(all_probe_subj_paths)} - '{probe_subj_path}'")
         subj_name = os.path.basename(probe_subj_path)
@@ -491,9 +495,9 @@ if __name__ == "__main__":
                 gallery_norm_embedd = get_face_embedd(model, gallery_norm_img)
                 
 
-                # for idx_probe_video, path_probe_video_path in enumerate(all_probe_subj_videos_paths):
                 for idx_probe_video, path_probe_video_path in enumerate(all_probe_subj_videos_paths):
-                    print('    ---')
+                    video_start_time = time.time()
+                    print('    ---------')
                     print(f"    Video {idx_probe_video}/{len(all_probe_subj_videos_paths)} - '{path_probe_video_path}'")
                     video_name = os.path.basename(path_probe_video_path)
                     output_selected_discarded_frames_dir = os.path.join(f"{args.output}", subj_name, video_name)
@@ -605,12 +609,26 @@ if __name__ == "__main__":
                     
                     print(f'    total_num_videos_with_recovered_faces:', total_num_videos_with_recovered_faces)
                     print(f'    total_num_recovered_faces:            ', total_num_recovered_faces)
+                    video_end_time = time.time()
+                    video_time = video_end_time - video_start_time
+                    print(f"        video_time:       {video_time:.2f}s    {video_time/60:.2f}m    {video_time/3600:.2f}h")
+        
                     
                     # sys.exit(0)    # end video
                 # sys.exit(0)    # end subj
             # sys.exit(0)    # end div
             # print("-----------------------")
+        
         else:
             print(f"    Skipping subj \'{subj_name}\' due to index constraints (begin_index_str: {begin_index_str}, end_index_str: {end_index_str})")
     
+        subj_end_time = time.time()
+        subj_time = subj_end_time - subj_start_time
+        total_exec_time += subj_time
+        remain_time = (len(all_probe_subj_paths)-idx_probe_subj+1) * subj_time
+
+        print(f"        subj_time:       {subj_time:.2f}s    {subj_time/60:.2f}m    {subj_time/3600:.2f}h")
+        print(f"        total_exec_time: {total_exec_time:.2f}s    {total_exec_time/60:.2f}m    {total_exec_time/3600:.2f}h")
+        print(f"        remain_time:     {remain_time:.2f}s    {remain_time/60:.2f}m    {remain_time/3600:.2f}h")
+
     print('\nFinished!\n')
