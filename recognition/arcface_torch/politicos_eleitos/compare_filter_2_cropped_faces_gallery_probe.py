@@ -522,12 +522,6 @@ if __name__ == "__main__":
                     print('            len(paths_probe_video_discarded_faces):', len(paths_probe_video_discarded_faces))
                     # sys.exit(0)
 
-                    # if len(paths_probe_video_selected_faces) == 0:
-                    #     print(f'            Skipping video without selected faces!')
-                    #     continue
-                    # if len(paths_probe_video_discarded_faces) == 0:
-                    #     print(f'            Skipping video without discarded faces!')
-                    #     continue
 
                     recovery_faces_paths            = []
                     recovery_faces_sims_to_gallery  = []
@@ -549,55 +543,26 @@ if __name__ == "__main__":
                     if len(paths_probe_video_selected_faces) > 0 and len(paths_probe_video_discarded_faces) > 0:
                         probe_video_selected_faces_norm_img  = torch.cat([load_normalize_img(path_selected_frame) for path_selected_frame in paths_probe_video_selected_faces])
                         probe_video_discarded_faces_norm_img = torch.cat([load_normalize_img(path_discarded_frame) for path_discarded_frame in paths_probe_video_discarded_faces])
-                        # print('            probe_video_selected_faces_norm_img.shape:', probe_video_selected_faces_norm_img.shape)
-                        # print('            probe_video_discarded_faces_norm_img.shape:', probe_video_discarded_faces_norm_img.shape)
-                        # sys.exit(0)
 
                         probe_video_selected_faces_embedds  = get_face_embedd_batch(model, probe_video_selected_faces_norm_img)
                         probe_video_discarded_faces_embedds = get_face_embedd_batch(model, probe_video_discarded_faces_norm_img)
-                        # print('            probe_video_selected_faces_embedds.shape:', probe_video_selected_faces_embedds.shape)
-                        # print('            probe_video_discarded_faces_embedds.shape:', probe_video_discarded_faces_embedds.shape)
-                        # sys.exit(0)
                         selected_faces_to_gallery_cossim  = cosine_similarity_torch(probe_video_selected_faces_embedds, gallery_norm_embedd).cpu().numpy()
 
 
-                        # output_selected_discarded_frames_dir = os.path.join(f"{args.output}", subj_name, video_name)
-                        # selected_discarded_faces_figure_filename = f'selected_discarded_faces_subj={subj_name}_video={video_name}_SELECTION_2.png'
-                        # output_grid_view_path = os.path.join(f"{args.output}_GRIDS_VIEWS", subj_name, selected_discarded_faces_figure_filename)
-
-                        # if args.dont_replace_existing_result:
-                        #     if os.path.isdir(output_selected_discarded_frames_dir) and os.path.isfile(output_grid_view_path):
-                        #         img_grid_view = cv2.imread(output_grid_view_path)
-                        #         if not img_grid_view is None:
-                        #             print(f"        Skipping video already processed!")
-                        #             continue
-
-                        # recovery_faces_paths            = []
-                        # recovery_faces_sims_to_gallery  = []
-                        # recovery_faces_sims_to_selected = []
-                        #
-                        # discarded_faces_paths = []
-                        # discarded_faces_sims_to_gallery  = []
-                        # discarded_faces_sims_to_selected = []
                         for idx_discarded_face_embedd, (path_discarded_face, discarded_face_embedd) in enumerate(zip(paths_probe_video_discarded_faces, probe_video_discarded_faces_embedds)):
                             print(f"        checking face {idx_discarded_face_embedd}/{len(paths_probe_video_discarded_faces)} - '{path_discarded_face}'", end='\r')
                             discarded_face_to_gallery_cossim  = cosine_similarity_torch(discarded_face_embedd, gallery_norm_embedd).cpu().numpy()
                             discarded_face_to_selected_cossim = cosine_similarity_torch(discarded_face_embedd, probe_video_selected_faces_embedds).cpu().numpy()
-                            # print('discarded_face_to_gallery_cossim:', discarded_face_to_gallery_cossim)
-                            # print('discarded_face_to_gallery_cossim.shape:', discarded_face_to_gallery_cossim.shape)
-                            # print('discarded_face_to_selected_cossim:', discarded_face_to_selected_cossim)
-                            # print('discarded_face_to_selected_cossim.shape:', discarded_face_to_selected_cossim.shape)
-
+                            
                             if discarded_face_to_gallery_cossim >= args.thresh_gallery and discarded_face_to_selected_cossim.mean() >= args.thresh_selected:
                                 recovery_faces_paths.append(path_discarded_face)
                                 recovery_faces_sims_to_gallery.append(discarded_face_to_gallery_cossim)
                                 recovery_faces_sims_to_selected.append(discarded_face_to_selected_cossim.mean())
-                                # print(f'face recuperada: ({discarded_face_to_gallery_cossim}, {discarded_face_to_selected_cossim.mean()})', path_discarded_face)
                             else:
                                 discarded_faces_paths.append(path_discarded_face)
                                 discarded_faces_sims_to_gallery.append(discarded_face_to_gallery_cossim)
                                 discarded_faces_sims_to_selected.append(discarded_face_to_selected_cossim.mean())
-                                # print(f'    face descartada: ({discarded_face_to_gallery_cossim}, {discarded_face_to_selected_cossim.mean()})', path_discarded_face)
+
                         print()
                         print(f'        len(paths_probe_video_selected_faces): {len(paths_probe_video_selected_faces)}')
                         print(f'        len(recovery_faces_paths):             {len(recovery_faces_paths)}')
@@ -634,8 +599,6 @@ if __name__ == "__main__":
                         copy_selected_discarded_frames(None, discarded_faces_paths, output_selected_faces_dir, output_discarded_faces_dir)
                     # sys.exit(0)                    
 
-                    # selected_discarded_faces_figure_filename = f'selected_discarded_faces_subj={subj_name}_video={video_name}.png'
-                    # output_grid_view_path = os.path.join(f"{args.output}_GRIDS_VIEWS", subj_name, selected_discarded_faces_figure_filename)
                     os.makedirs(os.path.dirname(output_grid_view_path), exist_ok=True)
                     title = f"Subj: '{subj_name}'    Video: '{video_name}'"
                     print(f'        Saving grid of selected and discarded faces: \'{output_grid_view_path}\'')
@@ -645,31 +608,11 @@ if __name__ == "__main__":
                                                        discarded_faces_paths, discarded_faces_sims_to_gallery, discarded_faces_sims_to_selected,
                                                        title, output_grid_view_path)
 
-
                     # sys.exit(0)    # end video
                 # sys.exit(0)    # end subj
             # sys.exit(0)    # end div
             # print("-----------------------")
         else:
             print(f"    Skipping subj \'{subj_name}\' due to index constraints (begin_index_str: {begin_index_str}, end_index_str: {end_index_str})")
-            
-
-
-    sys.exit(0)
-
-    print(f'Loading and normalizing images {args.img1}, {args.img2}')
-    norm_img1 = load_normalize_img(args.img1)
-    norm_img2 = load_normalize_img(args.img2)
-
-    print(f'Computing face embeddings')
-    face_embedd1 = get_face_embedd(model, norm_img1)
-    face_embedd2 = get_face_embedd(model, norm_img2)
-
-    print(f'Computing cosine similarity (0: lowest, 1: highest)')
-    sim = cosine_similarity(face_embedd1, face_embedd2)
-    print(f'Cosine similarity: {sim}')
-
-    if sim >= args.thresh:
-        print('    SAME PERSON')
-    else:
-        print('    DIFFERENT PERSON')
+    
+    print('\nFinished!\n')
