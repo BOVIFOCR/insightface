@@ -25,8 +25,8 @@ def parse_args():
     parser.add_argument('--probe-selected-discarded', type=str, default='/experiments/adsouza/raw_frames_pre_selected_DETECTED_FACES_RETINAFACE_scales=[0.5]_thresh=0.5_nms=0.4/imgs_112x112_SELECTED_DISCARDED_FACES')
     parser.add_argument('--gallery', type=str, default='/experiments/adsouza/image_gallery_DETECTED_FACES_RETINAFACE_scales=[0.5]_thresh=0.5_nms=0.4/imgs_112x112')
     parser.add_argument('--output', type=str, default='')
-    parser.add_argument('--thresh-gallery',  type=float, default=0.2)
-    parser.add_argument('--thresh-selected', type=float, default=0.35)
+    parser.add_argument('--thresh-to-gallery',  type=float, default=0.2)
+    parser.add_argument('--thresh-to-selected', type=float, default=0.25)
 
     parser.add_argument('--str_begin',   default='', type=str, help='Substring to find and start processing')
     parser.add_argument('--str_end',     default='', type=str, help='Substring to find and stop processing')
@@ -51,31 +51,6 @@ def get_immediate_subdirs(path):
         raise ValueError(f"The path '{path}' is not a valid directory.")
     subdirs = [entry for entry in base_path.iterdir() if entry.is_dir()]
     return natural_sort(subdirs)
-
-
-'''
-def load_faces_frames_videos(videos_path):
-    base_path = Path(videos_path)
-    if not base_path.is_dir():
-        raise ValueError(f"The path '{videos_path}' is not a valid directory.")
-
-    frames_dict = defaultdict(list)
-    # frame_prefix_pattern = re.compile(r"^(frame_\d+)")
-    frame_prefix_pattern = re.compile(r"^(0*\d+)")
-    for entry in base_path.iterdir():
-        if entry.is_file():
-            filename = entry.name
-            match = frame_prefix_pattern.match(filename)
-            if match:
-                frame_key = match.group(1)
-                frames_dict[frame_key].append(os.path.join(base_path,filename))
-
-    for frame_key in frames_dict:
-        frames_dict[frame_key] = natural_sort(frames_dict[frame_key])
-
-    sorted_keys = natural_sort(list(frames_dict.keys()))
-    return {key: frames_dict[key] for key in sorted_keys}
-'''
 
 
 def load_faces_frames_videos(folder_path, file_extension=['.jpg','.png'], pattern=''):
@@ -451,10 +426,10 @@ if __name__ == "__main__":
     args = parse_args()
 
     if not args.output:
-        args.output = f"{args.probe_selected_discarded}_SELECTION_2"
+        args.output = f"{args.probe_selected_discarded}_SELECTION_2_thresh-to-gallery={args.thresh_to_gallery}_thresh-to-selected={args.thresh_to_selected}"
     
     list_videos_with_recovered_faces = []
-    path_list_videos_with_recovered_faces = f'{args.output}_videos_with_recovered_faces.txt'
+    path_list_videos_with_recovered_faces = f'{args.output}_videos_with_recovered_faces_thresh-to-gallery={args.thresh_to_gallery}_thresh-to-selected={args.thresh_to_selected}.txt'
 
     print(f'Loading trained model ({args.network}): \'{args.weight}\'')
     model = load_trained_model(args.network, args.weight)
@@ -569,7 +544,7 @@ if __name__ == "__main__":
                             discarded_face_to_gallery_cossim  = cosine_similarity_torch(discarded_face_embedd, gallery_norm_embedd).cpu().numpy()
                             discarded_face_to_selected_cossim = cosine_similarity_torch(discarded_face_embedd, probe_video_selected_faces_embedds).cpu().numpy()
                             
-                            if discarded_face_to_gallery_cossim >= args.thresh_gallery and discarded_face_to_selected_cossim.mean() >= args.thresh_selected:
+                            if discarded_face_to_gallery_cossim >= args.thresh_to_gallery and discarded_face_to_selected_cossim.mean() >= args.thresh_to_selected:
                                 recovery_faces_paths.append(path_discarded_face)
                                 recovery_faces_sims_to_gallery.append(discarded_face_to_gallery_cossim)
                                 recovery_faces_sims_to_selected.append(discarded_face_to_selected_cossim.mean())
