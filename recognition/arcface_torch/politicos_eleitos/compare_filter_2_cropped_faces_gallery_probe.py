@@ -429,7 +429,7 @@ if __name__ == "__main__":
         args.output = f"{args.probe_selected_discarded}_SELECTION_2_thresh-to-gallery={args.thresh_to_gallery}_thresh-to-selected={args.thresh_to_selected}"
     
     list_videos_with_recovered_faces = []
-    path_list_videos_with_recovered_faces = f'{args.output}_videos_with_recovered_faces_thresh-to-gallery={args.thresh_to_gallery}_thresh-to-selected={args.thresh_to_selected}.txt'
+    path_list_videos_with_recovered_faces = f'{args.output}_videos_with_recovered_faces.txt'
 
     print(f'Loading trained model ({args.network}): \'{args.weight}\'')
     model = load_trained_model(args.network, args.weight)
