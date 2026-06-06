@@ -436,6 +436,14 @@ def copy_selected_discarded_frames(
     # print("File organization completed successfully!")
 
 
+def save_list_to_text_file(list_str, path_file):
+    try:
+        with open(path_file, "w", encoding="utf-8") as file:
+            for item in list_str:
+                file.write(f"{item}\n")
+        # print(f"Successfully saved {len(list_str)} items to '{path_file}'.")
+    except OSError as e:
+        print(f"An error occurred while writing to the file: {e}")
 
 
 
@@ -444,6 +452,9 @@ if __name__ == "__main__":
 
     if not args.output:
         args.output = f"{args.probe_selected_discarded}_SELECTION_2"
+    
+    list_videos_with_recovered_faces = []
+    path_list_videos_with_recovered_faces = f'{args.output}_videos_with_recovered_faces.txt'
 
     print(f'Loading trained model ({args.network}): \'{args.weight}\'')
     model = load_trained_model(args.network, args.weight)
@@ -481,6 +492,9 @@ if __name__ == "__main__":
     print('end_index_str:', end_index_str)
     print('------------------------\n')
     # sys.exit(0)
+
+    total_num_videos_with_recovered_faces = 0
+    total_num_recovered_faces = 0
 
     for idx_probe_subj, probe_subj_path in enumerate(all_probe_subj_paths):
         print("-----------------------")
@@ -523,6 +537,14 @@ if __name__ == "__main__":
                     # sys.exit(0)
 
 
+                    if args.dont_replace_existing_result:
+                        if os.path.isdir(output_selected_discarded_frames_dir) and os.path.isfile(output_grid_view_path):
+                            img_grid_view = cv2.imread(output_grid_view_path)
+                            if not img_grid_view is None:
+                                print(f"        Skipping video already processed!")
+                                continue
+
+
                     recovery_faces_paths            = []
                     recovery_faces_sims_to_gallery  = []
                     recovery_faces_sims_to_selected = []
@@ -532,13 +554,6 @@ if __name__ == "__main__":
                     discarded_faces_sims_to_selected = []
 
                     selected_faces_to_gallery_cossim = []
-
-                    if args.dont_replace_existing_result:
-                            if os.path.isdir(output_selected_discarded_frames_dir) and os.path.isfile(output_grid_view_path):
-                                img_grid_view = cv2.imread(output_grid_view_path)
-                                if not img_grid_view is None:
-                                    print(f"        Skipping video already processed!")
-                                    continue
 
                     if len(paths_probe_video_selected_faces) > 0 and len(paths_probe_video_discarded_faces) > 0:
                         probe_video_selected_faces_norm_img  = torch.cat([load_normalize_img(path_selected_frame) for path_selected_frame in paths_probe_video_selected_faces])
@@ -592,6 +607,11 @@ if __name__ == "__main__":
                         print(f'        Copying initially selected faces: \'{output_selected_discarded_frames_dir}\'')
                         copy_selected_discarded_frames(paths_probe_video_selected_faces, None, output_selected_faces_dir, output_discarded_faces_dir)    
                     if len(recovery_faces_paths) > 0:
+                        total_num_videos_with_recovered_faces += 1
+                        total_num_recovered_faces += len(recovery_faces_paths)
+                        list_videos_with_recovered_faces.append(path_probe_video_path)
+                        print(f'        Saving list of videos with recovered faces: \'{path_list_videos_with_recovered_faces}\'')
+                        save_list_to_text_file(list_videos_with_recovered_faces, path_list_videos_with_recovered_faces)
                         print(f'        Copying recovered faces: \'{output_selected_discarded_frames_dir}\'')
                         copy_selected_discarded_frames(recovery_faces_paths, None, output_selected_faces_dir, output_discarded_faces_dir)
                     if len(discarded_faces_paths) > 0:
@@ -607,7 +627,10 @@ if __name__ == "__main__":
                                                        recovery_faces_paths, recovery_faces_sims_to_gallery, recovery_faces_sims_to_selected,
                                                        discarded_faces_paths, discarded_faces_sims_to_gallery, discarded_faces_sims_to_selected,
                                                        title, output_grid_view_path)
-
+                    
+                    print(f'    total_num_videos_with_recovered_faces:', total_num_videos_with_recovered_faces)
+                    print(f'    total_num_recovered_faces:            ', total_num_recovered_faces)
+                    
                     # sys.exit(0)    # end video
                 # sys.exit(0)    # end subj
             # sys.exit(0)    # end div
