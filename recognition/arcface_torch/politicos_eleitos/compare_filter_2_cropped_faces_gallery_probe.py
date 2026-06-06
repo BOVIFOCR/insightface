@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument('--gallery', type=str, default='/experiments/adsouza/image_gallery_DETECTED_FACES_RETINAFACE_scales=[0.5]_thresh=0.5_nms=0.4/imgs_112x112')
     parser.add_argument('--output', type=str, default='')
     parser.add_argument('--thresh-gallery',  type=float, default=0.2)
-    parser.add_argument('--thresh-selected', type=float, default=0.5)
+    parser.add_argument('--thresh-selected', type=float, default=0.35)
 
     parser.add_argument('--str_begin',   default='', type=str, help='Substring to find and start processing')
     parser.add_argument('--str_end',     default='', type=str, help='Substring to find and stop processing')
