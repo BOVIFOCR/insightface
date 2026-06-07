@@ -12,7 +12,11 @@ import glob
 from collections import defaultdict
 import shutil
 import time
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import gc
 
 sys.path.insert(0, '..')
 from backbones import get_model
@@ -368,7 +372,12 @@ def save_grid_selected_discarded_faces(
     save_path = Path(output_grid_view_path)
     save_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(save_path, bbox_inches="tight", dpi=150)
-    plt.close()
+
+    # plt.close()
+    fig.clf()            # Clear the figure content
+    plt.close(fig)       # Close the specific figure window
+    del fig, axs         # Delete the Python references
+    gc.collect()         # Force Python's garbage collector to run
 
 
 
@@ -615,8 +624,7 @@ if __name__ == "__main__":
         
                     
                     # sys.exit(0)    # end video
-                # sys.exit(0)    # end subj
-            # sys.exit(0)    # end div
+            sys.exit(0)    # end subj
             # print("-----------------------")
         
         else:
