@@ -624,7 +624,7 @@ if __name__ == "__main__":
         
                     
                     # sys.exit(0)    # end video
-            sys.exit(0)    # end subj
+            # sys.exit(0)    # end subj
             # print("-----------------------")
         
         else:
