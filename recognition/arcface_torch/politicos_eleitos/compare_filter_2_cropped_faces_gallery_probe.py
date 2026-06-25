@@ -36,7 +36,10 @@ def parse_args():
     parser.add_argument('--str_begin',   default='', type=str, help='Substring to find and start processing')
     parser.add_argument('--str_end',     default='', type=str, help='Substring to find and stop processing')
     # parser.add_argument('--str_pattern', default='', type=str, help='Substring to find and stop processing')
+    
     parser.add_argument('--dont_replace_existing_result', action='store_true')
+    parser.add_argument('--dont_save_face_imgs',          action='store_true')
+    parser.add_argument('--dont_save_face_grids',         action='store_true')
 
     args = parser.parse_args()
     return args
@@ -586,35 +589,37 @@ if __name__ == "__main__":
                         discarded_faces_sims_to_gallery  = cosine_similarity_torch(probe_video_discarded_faces_embedds, gallery_norm_embedd).cpu().numpy()
                         
 
-                    output_selected_faces_dir  = os.path.join(output_selected_discarded_frames_dir, "selected")
-                    output_discarded_faces_dir = os.path.join(output_selected_discarded_frames_dir, "discarded")
-                    os.makedirs(output_selected_faces_dir, exist_ok=True)
-                    os.makedirs(output_discarded_faces_dir, exist_ok=True)
+                    if not args.dont_save_face_imgs:
+                        output_selected_faces_dir  = os.path.join(output_selected_discarded_frames_dir, "selected")
+                        output_discarded_faces_dir = os.path.join(output_selected_discarded_frames_dir, "discarded")
+                        os.makedirs(output_selected_faces_dir, exist_ok=True)
+                        os.makedirs(output_discarded_faces_dir, exist_ok=True)
 
-                    if len(paths_probe_video_selected_faces) > 0:
-                        print(f'        Copying initially selected faces: \'{output_selected_discarded_frames_dir}\'')
-                        copy_selected_discarded_frames(paths_probe_video_selected_faces, None, output_selected_faces_dir, output_discarded_faces_dir)    
-                    if len(recovery_faces_paths) > 0:
-                        total_num_videos_with_recovered_faces += 1
-                        total_num_recovered_faces += len(recovery_faces_paths)
-                        list_videos_with_recovered_faces.append(path_probe_video_path)
-                        print(f'        Saving list of videos with recovered faces: \'{path_list_videos_with_recovered_faces}\'')
-                        save_list_to_text_file(list_videos_with_recovered_faces, path_list_videos_with_recovered_faces)
-                        print(f'        Copying recovered faces: \'{output_selected_discarded_frames_dir}\'')
-                        copy_selected_discarded_frames(recovery_faces_paths, None, output_selected_faces_dir, output_discarded_faces_dir)
-                    if len(discarded_faces_paths) > 0:
-                        print(f'        Copying discarded faces: \'{output_selected_discarded_frames_dir}\'')
-                        copy_selected_discarded_frames(None, discarded_faces_paths, output_selected_faces_dir, output_discarded_faces_dir)
+                        if len(paths_probe_video_selected_faces) > 0:
+                            print(f'        Copying initially selected faces: \'{output_selected_discarded_frames_dir}\'')
+                            copy_selected_discarded_frames(paths_probe_video_selected_faces, None, output_selected_faces_dir, output_discarded_faces_dir)    
+                        if len(recovery_faces_paths) > 0:
+                            total_num_videos_with_recovered_faces += 1
+                            total_num_recovered_faces += len(recovery_faces_paths)
+                            list_videos_with_recovered_faces.append(path_probe_video_path)
+                            print(f'        Saving list of videos with recovered faces: \'{path_list_videos_with_recovered_faces}\'')
+                            save_list_to_text_file(list_videos_with_recovered_faces, path_list_videos_with_recovered_faces)
+                            print(f'        Copying recovered faces: \'{output_selected_discarded_frames_dir}\'')
+                            copy_selected_discarded_frames(recovery_faces_paths, None, output_selected_faces_dir, output_discarded_faces_dir)
+                        if len(discarded_faces_paths) > 0:
+                            print(f'        Copying discarded faces: \'{output_selected_discarded_frames_dir}\'')
+                            copy_selected_discarded_frames(None, discarded_faces_paths, output_selected_faces_dir, output_discarded_faces_dir)
                     # sys.exit(0)                    
 
-                    os.makedirs(os.path.dirname(output_grid_view_path), exist_ok=True)
-                    title = f"Subj: '{subj_name}'    Video: '{video_name}'"
-                    print(f'        Saving grid of selected and discarded faces: \'{output_grid_view_path}\'')
-                    save_grid_selected_discarded_faces(path_gallery_img,
-                                                       paths_probe_video_selected_faces, selected_faces_to_gallery_cossim,
-                                                       recovery_faces_paths, recovery_faces_sims_to_gallery, recovery_faces_sims_to_selected,
-                                                       discarded_faces_paths, discarded_faces_sims_to_gallery, discarded_faces_sims_to_selected,
-                                                       title, output_grid_view_path)
+                    if not args.dont_save_face_grids:
+                        os.makedirs(os.path.dirname(output_grid_view_path), exist_ok=True)
+                        title = f"Subj: '{subj_name}'    Video: '{video_name}'"
+                        print(f'        Saving grid of selected and discarded faces: \'{output_grid_view_path}\'')
+                        save_grid_selected_discarded_faces(path_gallery_img,
+                                                        paths_probe_video_selected_faces, selected_faces_to_gallery_cossim,
+                                                        recovery_faces_paths, recovery_faces_sims_to_gallery, recovery_faces_sims_to_selected,
+                                                        discarded_faces_paths, discarded_faces_sims_to_gallery, discarded_faces_sims_to_selected,
+                                                        title, output_grid_view_path)
                     
                     print(f'    total_num_videos_with_recovered_faces:', total_num_videos_with_recovered_faces)
                     print(f'    total_num_recovered_faces:            ', total_num_recovered_faces)
